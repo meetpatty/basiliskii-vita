@@ -1,0 +1,32 @@
+# D-Pad as Mouse input map
+#    by J.F.
+#
+# UP and NOT LTR = mouse moved up slowly
+0x0010 0x0100 647 255 255 255
+# RIGHT and NOT LTR = mouse moved right slowly
+0x0020 0x0100 664 255 255 255
+# DOWN and NOT LTR = mouse moved down slowly
+0x0040 0x0100 649 255 255 255
+# LEFT and NOT LTR = mouse moved left slowly
+0x0080 0x0100 632 255 255 255
+#
+# UP and LTR = mouse moved up quickly
+0x0110 0x0000 641 255 255 255
+# RIGHT and LTR = mouse moved right quickly
+0x0120 0x0000 760 255 255 255
+# DOWN and LTR = mouse moved down quickly
+0x0140 0x0000 655 255 255 255
+# LEFT and LTR = mouse moved left quickly
+0x0180 0x0000 536 255 255 255
+#
+# RTR = control
+0x0200 0x0000 54 255 255 255
+#
+# TRIANGLE = command + q
+0x1000 0x0000 55 12 255 255
+# CIRCLE = command + w
+0x2000 0x0000 55 13 255 255
+# CROSS = mouse button 0
+0x4000 0x0000 256 255 255 255
+# SQUARE = enter
+0x8000 0x0000 36 255 255 255

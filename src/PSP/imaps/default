@@ -1,0 +1,23 @@
+# Default input map
+#    by J.F.
+#
+# UP = cursor up
+0x0010 0x0000 62 255 255 255
+# RIGHT = cursor right
+0x0020 0x0000 60 255 255 255
+# DOWN = cursor down
+0x0040 0x0000 61 255 255 255
+# LEFT = cursor left
+0x0080 0x0000 59 255 255 255
+# LTRIGGER = alt
+0x0100 0x0000 58 255 255 255
+# RTRIGGER = control
+0x0200 0x0000 54 255 255 255
+# TRIANGLE = command + q
+0x1000 0x0000 55 12 255 255
+# CIRCLE = command + w
+0x2000 0x0000 55 13 255 255
+# CROSS = mouse button 0
+0x4000 0x0000 256 255 255 255
+# SQUARE = enter
+0x8000 0x0000 36 255 255 255

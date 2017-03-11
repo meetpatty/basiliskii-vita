@@ -1,0 +1,19 @@
+# Maelstrom input map
+#    by J.F.
+#
+# RIGHT = command (turn clockwise)
+0x0020 0x0000 55 255 255 255
+# LEFT = option (turn counter-clockwise)
+0x0080 0x0000 58 255 255 255
+# TRIANGLE = p (play game)
+0x1000 0x0000 35 255 255 255
+# CIRCLE = control (thrust)
+0x2000 0x0000 54 255 255 255
+# CROSS = shift (fire)
+0x4000 0x0000 56 255 255 255
+# SQUARE = space (shields, toggle menu bar)
+0x8000 0x0000 49 255 255 255
+# LTRIGGER = esc (abort game)
+0x0100 0x0000 53 255 255 255
+# RTRIGGER = caps (pause)
+0x0200 0x0000 57 255 255 255

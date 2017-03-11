@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Release" />
+	<File name="audio_psp.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="6006" topLine="213" />
+	</File>
+	<File name="clip_psp.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="925" topLine="1" />
+	</File>
+	<File name="danzeff/danzeff.c" open="0" top="0" tabpos="0">
+		<Cursor position="4054" topLine="117" />
+	</File>
+	<File name="danzeff/danzeff.h" open="0" top="0" tabpos="0">
+		<Cursor position="850" topLine="15" />
+	</File>
+	<File name="ether_psp.cpp" open="0" top="0" tabpos="9">
+		<Cursor position="1304" topLine="5" />
+	</File>
+	<File name="extfs_psp.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="16018" topLine="532" />
+	</File>
+	<File name="ftruncate.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="104" topLine="0" />
+	</File>
+	<File name="gui_psp.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="7477" topLine="525" />
+	</File>
+	<File name="intraFont.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="90453" topLine="759" />
+	</File>
+	<File name="intraFont.h" open="0" top="0" tabpos="0">
+		<Cursor position="682" topLine="0" />
+	</File>
+	<File name="main_psp.cpp" open="1" top="0" tabpos="5">
+		<Cursor position="3104" topLine="115" />
+	</File>
+	<File name="makefile" open="1" top="0" tabpos="1">
+		<Cursor position="1108" topLine="0" />
+	</File>
+	<File name="prefs_editor_psp.cpp" open="1" top="0" tabpos="3">
+		<Cursor position="20938" topLine="648" />
+	</File>
+	<File name="prefs_psp.cpp" open="0" top="0" tabpos="9">
+		<Cursor position="843" topLine="16" />
+	</File>
+	<File name="reqfile.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="1123" topLine="89" />
+	</File>
+	<File name="scsi_psp.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="0" topLine="40" />
+	</File>
+	<File name="serial_psp.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="0" topLine="91" />
+	</File>
+	<File name="sys_psp.cpp" open="0" top="0" tabpos="6">
+		<Cursor position="1828" topLine="47" />
+	</File>
+	<File name="sysdeps.h" open="1" top="0" tabpos="2">
+		<Cursor position="3219" topLine="110" />
+	</File>
+	<File name="timer_psp.cpp" open="0" top="0" tabpos="8">
+		<Cursor position="1675" topLine="48" />
+	</File>
+	<File name="user_strings_psp.cpp" open="0" top="0" tabpos="3">
+		<Cursor position="2472" topLine="31" />
+	</File>
+	<File name="user_strings_psp.h" open="0" top="0" tabpos="4">
+		<Cursor position="1428" topLine="13" />
+	</File>
+	<File name="video_psp.cpp" open="1" top="0" tabpos="4">
+		<Cursor position="1655" topLine="24" />
+	</File>
+	<File name="xpram_psp.cpp" open="0" top="0" tabpos="0">
+		<Cursor position="1270" topLine="20" />
+	</File>
+</CodeBlocks_layout_file>

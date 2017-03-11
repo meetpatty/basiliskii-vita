@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="BasiliskII" />
+		<Option makefile="makefile" />
+		<Option makefile_is_custom="1" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release">
+				<Option output="bin/Release/BasiliskII" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+				<MakeCommands>
+					<Build command='export PSPDEV=&quot;/usr/local/pspdev&quot; &amp;&amp; export PSPSDK=&quot;$PSPDEV/psp/sdk&quot; &amp;&amp; export PSPPATH=&quot;$PSPDEV/bin:$PSPDEV/psp/bin:$PSPSDK/bin&quot; &amp;&amp; export PATH=&quot;$PATH:$PSPPATH&quot; &amp;&amp; export PKG_CONFIG_PATH=&quot;$PSPDEV/psp/lib/pkgconfig&quot; &amp;&amp; $make -f $makefile' />
+					<CompileFile command='export PSPDEV=&quot;/usr/local/pspdev&quot; &amp;&amp; export PSPSDK=&quot;$PSPDEV/psp/sdk&quot; &amp;&amp; export PSPPATH=&quot;$PSPDEV/bin:$PSPDEV/psp/bin:$PSPSDK/bin&quot; &amp;&amp; export PATH=&quot;$PATH:$PSPPATH&quot; &amp;&amp; export PKG_CONFIG_PATH=&quot;$PSPDEV/psp/lib/pkgconfig&quot; &amp;&amp; $make -f $makefile $file' />
+					<Clean command='export PSPDEV=&quot;/usr/local/pspdev&quot; &amp;&amp; export PSPSDK=&quot;$PSPDEV/psp/sdk&quot; &amp;&amp; export PSPPATH=&quot;$PSPDEV/bin:$PSPDEV/psp/bin:$PSPSDK/bin&quot; &amp;&amp; export PATH=&quot;$PATH:$PSPPATH&quot; &amp;&amp; export PKG_CONFIG_PATH=&quot;$PSPDEV/psp/lib/pkgconfig&quot; &amp;&amp; $make -f $makefile clean' />
+					<DistClean command='export PSPDEV=&quot;/usr/local/pspdev&quot; &amp;&amp; export PSPSDK=&quot;$PSPDEV/psp/sdk&quot; &amp;&amp; export PSPPATH=&quot;$PSPDEV/bin:$PSPDEV/psp/bin:$PSPSDK/bin&quot; &amp;&amp; export PATH=&quot;$PATH:$PSPPATH&quot; &amp;&amp; export PKG_CONFIG_PATH=&quot;$PSPDEV/psp/lib/pkgconfig&quot; &amp;&amp; $make -f $makefile distclean' />
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="BasiliskII.cbp" />
+		<Unit filename="ICON0b2.PNG" />
+		<Unit filename="ICON0blk.PNG" />
+		<Unit filename="ICON0wht.PNG" />
+		<Unit filename="Makefile_beos" />
+		<Unit filename="PIC1.PNG" />
+		<Unit filename="SND0.AT3" />
+		<Unit filename="audio_psp.cpp" />
+		<Unit filename="clip_psp.cpp" />
+		<Unit filename="cputbl.h" />
+		<Unit filename="danzeff/danzeff.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="danzeff/danzeff.h" />
+		<Unit filename="ether_psp.cpp" />
+		<Unit filename="extfs_psp.cpp" />
+		<Unit filename="ftruncate.cpp" />
+		<Unit filename="gui_psp.cpp" />
+		<Unit filename="gui_psp.h" />
+		<Unit filename="intraFont.cpp" />
+		<Unit filename="intraFont.h" />
+		<Unit filename="main_psp.cpp" />
+		<Unit filename="makefile" />
+		<Unit filename="prefs_editor_psp.cpp" />
+		<Unit filename="prefs_psp.cpp" />
+		<Unit filename="reqfile.cpp" />
+		<Unit filename="scsi_psp.cpp" />
+		<Unit filename="serial_psp.cpp" />
+		<Unit filename="sys_psp.cpp" />
+		<Unit filename="sysdeps.h" />
+		<Unit filename="timer_psp.cpp" />
+		<Unit filename="user_strings_psp.cpp" />
+		<Unit filename="user_strings_psp.h" />
+		<Unit filename="video_psp.cpp" />
+		<Unit filename="xpram_psp.cpp" />
+		<Unit filename="../include/user_strings.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<lib_finder disable_auto="1" />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
