@@ -45,7 +45,6 @@
 
 #ifndef WIN32
 #include <unistd.h>
-#include <dirent.h>
 #endif
 
 #if defined __APPLE__ && defined __MACH__
@@ -1196,7 +1195,9 @@ static int16 fs_get_vol(uint32 pb)
 // Set default volume (WDParam)
 static int16 fs_set_vol(uint32 pb, bool hfs, uint32 vcb)
 {
-	D(bug(" fs_set_vol(%08lx), vRefNum %d, name %.31s, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt32(pb + ioWDDirID)));
+	return fnfErr;
+	
+	/*D(bug(" fs_set_vol(%08lx), vRefNum %d, name %.31s, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt32(pb + ioWDDirID)));
 	M68kRegisters r;
 
 	// Determine parameters
@@ -1246,13 +1247,14 @@ static int16 fs_set_vol(uint32 pb, bool hfs, uint32 vcb)
 	r.d[2] = refNum;
 	Execute68k(fs_data + fsSetDefaultVol, &r);
 	D(bug("  UTSetDefaultVol() returned %d\n", r.d[0]));
-	return (int16)r.d[0];
+	return (int16)r.d[0];*/
 }
 
 // Query file attributes (HFileParam)
 static int16 fs_get_file_info(uint32 pb, bool hfs, uint32 dirID)
 {
-	D(bug(" fs_get_file_info(%08lx), vRefNum %d, name %.31s, idx %d, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt16(pb + ioFDirIndex), dirID));
+	return fnfErr;
+	/*D(bug(" fs_get_file_info(%08lx), vRefNum %d, name %.31s, idx %d, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt16(pb + ioFDirIndex), dirID));
 
 	FSItem *fs_item;
 	int16 dir_index = ReadMacInt16(pb + ioFDirIndex);
@@ -1338,7 +1340,7 @@ read_next_de:
 		WriteMacInt32(pb + ioFlParID, fs_item->parent_id);
 		WriteMacInt32(pb + ioFlClpSiz, 0);
 	}
-	return noErr;
+	return noErr;*/
 }
 
 // Set file attributes (HFileParam)
@@ -1369,7 +1371,9 @@ static int16 fs_set_file_info(uint32 pb, bool hfs, uint32 dirID)
 // Query file/directory attributes
 static int16 fs_get_cat_info(uint32 pb)
 {
-	D(bug(" fs_get_cat_info(%08lx), vRefNum %d, name %.31s, idx %d, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt16(pb + ioFDirIndex), ReadMacInt32(pb + ioDirID)));
+	return fnfErr;
+	
+	/*D(bug(" fs_get_cat_info(%08lx), vRefNum %d, name %.31s, idx %d, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt16(pb + ioFDirIndex), ReadMacInt32(pb + ioDirID)));
 
 	FSItem *fs_item;
 	int16 dir_index = ReadMacInt16(pb + ioFDirIndex);
@@ -1492,7 +1496,7 @@ read_next_de:
 		WriteMacInt32(pb + ioFlRPyLen, (rf_size | (AL_BLK_SIZE - 1)) + 1);
 		WriteMacInt32(pb + ioFlClpSiz, 0);
 	}
-	return noErr;
+	return noErr;*/
 }
 
 // Set file/directory attributes
@@ -1964,7 +1968,7 @@ static int16 fs_create(uint32 pb, uint32 dirID)
 // Create directory
 static int16 fs_dir_create(uint32 pb)
 {
-	D(bug(" fs_dir_create(%08lx), vRefNum %d, name %.31s, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt32(pb + ioDirID)));
+	/*D(bug(" fs_dir_create(%08lx), vRefNum %d, name %.31s, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt32(pb + ioDirID)));
 
 	// Find FSItem for given directory
 	FSItem *fs_item;
@@ -1983,6 +1987,7 @@ static int16 fs_dir_create(uint32 pb)
 		WriteMacInt32(pb + ioDirID, fs_item->id);
 		return noErr;
 	}
+	*/
 }
 
 // Delete file/directory

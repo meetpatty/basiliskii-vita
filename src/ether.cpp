@@ -33,7 +33,6 @@
 #if SUPPORTS_UDP_TUNNEL
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <sys/ioctl.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <errno.h>
@@ -91,7 +90,7 @@ static map<uint16, uint32> udp_protocols;
 
 void EtherInit(void)
 {
-	net_open = false;
+	/*net_open = false;
 	udp_tunnel = false;
 
 #if SUPPORTS_UDP_TUNNEL
@@ -166,7 +165,7 @@ void EtherInit(void)
 	} else
 #endif
 		if (ether_init())
-			net_open = true;
+			net_open = true;*/
 }
 
 
@@ -226,7 +225,7 @@ static inline bool is_ethernet_broadcast(uint8 *p)
 
 int16 EtherOpen(uint32 pb, uint32 dce)
 {
-	D(bug("EtherOpen\n"));
+	/*D(bug("EtherOpen\n"));
 
 	// Allocate driver data
 	M68kRegisters r;
@@ -259,7 +258,7 @@ int16 EtherOpen(uint32 pb, uint32 dce)
 	WriteMacInt16(ether_data + ed_ReadPacket + 16, 0x4e75);	//  rts
 	WriteMacInt16(ether_data + ed_ReadPacket + 18, M68K_EMUL_OP_ETHER_READ_PACKET);	//2
 	WriteMacInt16(ether_data + ed_ReadPacket + 20, 0x4a43);	//  tst.w	d3
-	WriteMacInt16(ether_data + ed_ReadPacket + 22, 0x4e75);	//  rts
+	WriteMacInt16(ether_data + ed_ReadPacket + 22, 0x4e75);	//  rts*/
 	return 0;
 }
 
@@ -270,7 +269,7 @@ int16 EtherOpen(uint32 pb, uint32 dce)
 
 int16 EtherControl(uint32 pb, uint32 dce)
 {
-	uint16 code = ReadMacInt16(pb + csCode);
+	/*uint16 code = ReadMacInt16(pb + csCode);
 	D(bug("EtherControl %d\n", code));
 	switch (code) {
 		case 1:					// KillIO
@@ -392,7 +391,8 @@ int16 EtherControl(uint32 pb, uint32 dce)
 		default:
 			printf("WARNING: Unknown EtherControl(%d)\n", code);
 			return controlErr;
-	}
+	}*/
+	return noErr;
 }
 
 
@@ -419,7 +419,7 @@ void EtherReadPacket(uint32 &src, uint32 &dest, uint32 &len, uint32 &remaining)
 
 void ether_udp_read(uint32 packet, int length, struct sockaddr_in *from)
 {
-	// Drop packets sent by us
+	/*// Drop packets sent by us
 	if (memcmp(Mac2HostAddr(packet) + 6, ether_addr, 6) == 0)
 		return;
 
@@ -454,7 +454,7 @@ void ether_udp_read(uint32 packet, int length, struct sockaddr_in *from)
 	r.a[3] = ether_data + ed_RHA + 14;				// Pointer behind header in RHA
 	r.a[4] = ether_data + ed_ReadPacket;			// Pointer to ReadPacket/ReadRest routines
 	D(bug(" calling protocol handler %08x, type %08x, length %08x, data %08x, rha %08x, read_packet %08x\n", handler, r.d[0], r.d[1], r.a[0], r.a[3], r.a[4]));
-	Execute68k(handler, &r);
+	Execute68k(handler, &r);*/
 }
 #endif
 

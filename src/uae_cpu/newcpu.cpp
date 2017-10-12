@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <psp2/kernel/processmgr.h>
 #include "sysdeps.h"
 
 #include "cpu_emulation.h"
@@ -90,7 +91,7 @@ void m68k_record_step(uaecptr pc)
 
 static void dump_log(void)
 {
-	FILE *f = fopen(log_filename(), "w");
+	FILE *f = fopen("ux0:data/log.txt", "w");
 	if (f == NULL)
 		return;
 	for (int i = 0; i < LOG_SIZE; i++) {
@@ -148,7 +149,7 @@ void dump_counts (void)
     unsigned long int total;
     int i;
 
-    write_log ("Writing instruction count file...\n");
+    //write_log ("Writing instruction count file...\n");
     for (i = 0; i < 65536; i++) {
 	opcodenums[i] = i;
 	total += instrcount[i];
@@ -260,7 +261,7 @@ void init_m68k (void)
 	if (f) {
 	    uae_u32 opcode, count, total;
 	    char name[20];
-	    write_log ("Reading instruction count file...\n");
+	    //write_log ("Reading instruction count file...\n");
 	    fscanf (f, "Total: %lu\n", &total);
 	    while (fscanf (f, "%lx: %lu %s\n", &opcode, &count, name) == 3) {
 		instrcount[opcode] = count;
@@ -273,7 +274,7 @@ void init_m68k (void)
     do_merges ();
 
     build_cpufunctbl ();
-	
+
 #if defined(ENABLE_EXCLUSIVE_SPCFLAGS) && !defined(HAVE_HARDWARE_LOCKS)
 	spcflags_lock = B2_create_mutex();
 #endif
@@ -782,7 +783,7 @@ void Exception(int nr, uaecptr oldpc)
 		put_word (m68k_areg(regs, 7)+4, last_op_for_exception_3);
 		put_long (m68k_areg(regs, 7)+8, last_addr_for_exception_3);
 	    }
-	    write_log ("Exception!\n");
+	    //write_log ("Exception!\n");
 	    goto kludge_me_do;
 	}
     }
@@ -1189,7 +1190,7 @@ void m68k_reset (void)
     regs.intmask = 7;
     regs.vbr = regs.sfc = regs.dfc = 0;
     fpu_reset();
-	
+
 #if FLIGHT_RECORDER
 	log_ptr = 0;
 	memset(log, 0, sizeof(log));
@@ -1248,7 +1249,7 @@ void REGPARAM2 op_illg (uae_u32 opcode)
 	return;
     }
 
-    write_log ("Illegal instruction: %04x at %08lx\n", opcode, pc);
+    //write_log ("Illegal instruction: %04x at %08lx\n", opcode, pc);
 #if USE_JIT && JIT_DEBUG
     compiler_dumpstate();
 #endif

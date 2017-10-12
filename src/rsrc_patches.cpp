@@ -37,6 +37,10 @@
 #define DEBUG 0
 #include "debug.h"
 
+#define ntohs __builtin_bswap16
+#define htons __builtin_bswap16
+#define ntohl __builtin_bswap32
+#define htonl __builtin_bswap32
 
 /*
  *  Search resource for byte string, return offset (or 0)
