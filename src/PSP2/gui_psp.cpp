@@ -15,7 +15,6 @@
 #include "user_strings.h"
 #include "user_strings_psp.h"
 #include "main.h"
-#include "ime_dialog.h"
 
 #define Get_String(x) const_cast<char*>(GetString(x))
 

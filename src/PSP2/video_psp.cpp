@@ -94,7 +94,8 @@ double scale_x, scale_y;
 static int psp_lcd_aspect = 0; // 4:3
 
 extern bool emerg_quit;     						// Flag: emergency quit requested
-
+extern int FONT_SIZE;
+extern vita2d_font *font;
 
 extern char *psp_floppy_inserted;                   // String: filename of floppy inserted
 extern char *psp_cdrom_inserted;                    // String: filename of cdrom inserted
@@ -634,8 +635,6 @@ static int numimaps = -1;
 
 static bool caps_lock = false;
 
-extern char psp_home[];
-
 extern int parse_dir (char *path, struct fileentries *thefiles, int maxentries);
 
 #define NUM_MAPS 64
@@ -903,7 +902,7 @@ void handle_keyboard(void)
 	}
 }
 
-void handle_menu(SceCtrlData pad, char *message)
+void handle_menu(SceCtrlData pad)
 {
     uint32 buttons;
     static uint32 oldButtons = 0;
@@ -911,22 +910,23 @@ void handle_menu(SceCtrlData pad, char *message)
     static uint32 max = 0;
     static uint32 idx = 0; // 0 = input maps, 1 = floppies, 2 = cdroms
     char temp[256];
+    uint32 fc = 0xFF8888FF;
 
     if (numcdroms == -1)
     {
-        strcpy(temp, psp_home);
+        strcpy(temp, HOME_DIR);
         strcat(temp, "cdroms");
         numcdroms = parse_dir(temp, cdroms, MAXCDROMS);
     }
     if (numfloppies == -1)
     {
-        strcpy(temp, psp_home);
+        strcpy(temp, HOME_DIR);
         strcat(temp, "disks");
         numfloppies = parse_dir(temp, floppies, MAXFLOPPIES);
     }
     if (numimaps == -1)
     {
-        strcpy(temp, psp_home);
+        strcpy(temp, HOME_DIR);
         strcat(temp, "imaps");
         numimaps = parse_dir(temp, imaps, MAXIMAPS);
     }
@@ -947,8 +947,8 @@ void handle_menu(SceCtrlData pad, char *message)
     buttons = pad.buttons ^ oldButtons; // set if button changed
     oldButtons = pad.buttons;
 
-	if (buttons & (SCE_CTRL_LEFT | SCE_CTRL_RIGHT))
-        if (pad.buttons & SCE_CTRL_LEFT)
+	if (buttons & (SCE_CTRL_UP | SCE_CTRL_DOWN))
+        if (pad.buttons & SCE_CTRL_UP)
         {
             // dec index
             idx = idx>0 ? idx-1 : 2;
@@ -962,7 +962,7 @@ void handle_menu(SceCtrlData pad, char *message)
                 idx = idx>0 ? idx-1 : 2;
             }
         }
-        else if (pad.buttons & SCE_CTRL_RIGHT)
+        else if (pad.buttons & SCE_CTRL_DOWN)
         {
             // inc index
             idx = idx<2 ? idx+1 : 0;
@@ -977,38 +977,38 @@ void handle_menu(SceCtrlData pad, char *message)
             }
         }
 
-	if (buttons & SCE_CTRL_UP)
-        if (pad.buttons & SCE_CTRL_UP)
+	if (buttons & SCE_CTRL_LEFT)
+        if (pad.buttons & SCE_CTRL_LEFT)
             sel = sel>0 ? sel-1 : max-1;
 
-	if (buttons & SCE_CTRL_DOWN)
-        if (pad.buttons & SCE_CTRL_DOWN)
+	if (buttons & SCE_CTRL_RIGHT)
+        if (pad.buttons & SCE_CTRL_RIGHT)
             sel = sel<max-1 ? sel+1 : 0;
 
     if (idx == 0)
     {
         // doing imaps
-        strcpy(temp, " ");
+        strcpy(temp, "imap: ");
         strcat(temp, imaps[sel].filename);
-        strcat(temp, " ");
+        vita2d_font_draw_text(font, 14, 530, fc, FONT_SIZE, "Press X to load imap");
     }
     else if (idx == 1)
     {
         // doing floppies
-        strcpy(temp, " ");
+        strcpy(temp, "floppy: ");
         strcat(temp, floppies[sel].filename);
-        strcat(temp, " ");
+        vita2d_font_draw_text(font, 14, 530, fc, FONT_SIZE, "Press X to mount floppy");
     }
     else if (idx == 2)
     {
         // doing cdroms
-        strcpy(temp, " ");
+        strcpy(temp, "cdrom: ");
         strcat(temp, cdroms[sel].filename);
-        strcat(temp, " ");
+        vita2d_font_draw_text(font, 14, 530, fc, FONT_SIZE, "Press X to mount cdrom");
     }
 
-    strncpy(message, temp, 67);
-
+    if (strlen(temp) > 0)
+        vita2d_font_draw_text(font, 14, FONT_SIZE*1.5, fc, FONT_SIZE, temp);
 
    	if (buttons & SCE_CTRL_CROSS)
         if (pad.buttons & SCE_CTRL_CROSS)
@@ -1097,10 +1097,6 @@ void handle_menu(SceCtrlData pad, char *message)
         }
 }
 
-void show_msg(char *message, uint32 fc, uint32 bc)
-{
-}
-
 /*
  *  Mac VBL interrupt
  */
@@ -1116,13 +1112,10 @@ void VideoInterrupt(void)
 	uint32 buttons;
 	static uint32 oldButtons = 0;
 	static uint32 qualifiers = 0;
-	static bool input_mode = false;
 	static bool show_menu = false;
     static bool show_on_right = true;
 	static int frame_cnt = 0;
-	static char msgtxt[68] = { '\0' };
-    uint32 fc = 0xFF000000;
-    uint32 bc = 0xFF8888FF;
+    uint32 fc = 0xFF8888FF;
     static int stick[16] = { -8, -8, -6, -4, -2, -1, -1, 0, 0, 0, 1, 1, 2, 4, 6, 8 };
 
 	sceCtrlReadBufferPositive(0, &pad, 1);
@@ -1130,19 +1123,12 @@ void VideoInterrupt(void)
     buttons = pad.buttons ^ oldButtons; // set if button changed
     oldButtons = pad.buttons;
 
-	if (buttons & SCE_CTRL_START)
-        if (pad.buttons & SCE_CTRL_START)
-            input_mode = input_mode ? false : true; // toggle input mode
-
 	if (buttons & SCE_CTRL_SELECT)
         if (pad.buttons & SCE_CTRL_SELECT)
             show_menu = show_menu ? false : true; // toggle imap/floppy/cdrom menu
-    if (input_mode)
-        show_menu = false; // select used for qualifiers in OSK
     else
     {
         qualifiers = 0; // clear qualifiers when exit OSK
-        msgtxt[0] = 0; // clear onscreen message
     }
 
 	// refresh video
@@ -1152,6 +1138,7 @@ void VideoInterrupt(void)
         if (frame_cnt < 0)
         {
             vita2d_start_drawing();
+            vita2d_clear_screen();
 
             frame_cnt = frame_skip - 1;
             if (psp_screen_d == VDEPTH_4BIT)
@@ -1163,12 +1150,15 @@ void VideoInterrupt(void)
             else if (psp_screen_d == VDEPTH_32BIT)
                 refresh24();
 
+            if (show_menu)
+                handle_menu(pad);
+
             vita2d_end_drawing();
             vita2d_swap_buffers();
         }
 
 	// process inputs
-    if (!input_mode && !show_menu)
+    if (!show_menu)
     {
         if (touch.reportNum <= 0 && mouseClickedTouch)
         {
@@ -1253,11 +1243,11 @@ void VideoInterrupt(void)
 				}
 			}
         }
-    }
 
-	if (keyboard_hid_handle) {
-		handle_keyboard();
-	}
+        if (keyboard_hid_handle) {
+            handle_keyboard();
+        }
+    }
 
 	// Emergency quit requested? Then quit
 	if (emerg_quit)
