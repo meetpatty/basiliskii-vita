@@ -14,7 +14,7 @@ OBJS = ../main.o main_psp.o ../prefs.o ../prefs_items.o prefs_psp.o \
 	../disk.o ../cdrom.o ../scsi.o scsi_psp.o ../video.o \
 	video_psp.o ../audio.o audio_psp.o ../extfs.o extfs_psp.o \
 	ftruncate.o ../user_strings.o user_strings_psp.o \
-	gui_psp.o reqfile.o debugScreen.o \
+	gui_psp.o reqfile.o debugScreen.o danzeff/danzeff.o\
 	$(CPUOBJS)
 
 INCLUDES = -I../include -I./include -I. -I../uae_cpu -I../uae_cpu/fpu/softfloat
@@ -55,6 +55,18 @@ cpuemu8.o: cpuemu.cpp
 	vita-pack-vpk -s param.sfo -b eboot.bin \
 	-a sce_sys/icon0.png=sce_sys/icon0.png \
 	-a fonts/ChicagoFLF.ttf=fonts/ChicagoFLF.ttf \
+	-a danzeff/graphics/keys.png=graphics/keys.png \
+	-a danzeff/graphics/keys_t.png=graphics/keys_t.png \
+	-a danzeff/graphics/keys_s.png=graphics/keys_s.png \
+	-a danzeff/graphics/keys_c.png=graphics/keys_c.png \
+	-a danzeff/graphics/keys_c_t.png=graphics/keys_c_t.png \
+	-a danzeff/graphics/keys_s_c.png=graphics/keys_s_c.png \
+	-a danzeff/graphics/nums.png=graphics/nums.png \
+	-a danzeff/graphics/nums_t.png=graphics/nums_t.png \
+	-a danzeff/graphics/nums_s.png=graphics/nums_s.png \
+	-a danzeff/graphics/nums_c.png=graphics/nums_c.png \
+	-a danzeff/graphics/nums_c_t.png=graphics/nums_c_t.png \
+	-a danzeff/graphics/nums_s_c.png=graphics/nums_s_c.png \
 	$@
 
 eboot.bin: $(TARGET).velf

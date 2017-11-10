@@ -37,6 +37,7 @@
 
 #include "gui_psp.h"
 #include "debugScreen.h"
+#include "danzeff/danzeff.h"
 
 #include "sysdeps.h"
 
@@ -195,6 +196,8 @@ int main(int argc, char **argv)
     vita2d_init();
 
 	gui_font_init();
+
+	danzeff_load();
 
 	// Initialize variables
 	RAMBaseHost = NULL;

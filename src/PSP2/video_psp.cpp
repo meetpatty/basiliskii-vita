@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <vector>
 
+#include "danzeff/danzeff.h"
 #include "cpu_emulation.h"
 #include "main.h"
 #include "adb.h"
@@ -1112,6 +1113,7 @@ void VideoInterrupt(void)
 	uint32 buttons;
 	static uint32 oldButtons = 0;
 	static uint32 qualifiers = 0;
+	static bool input_mode = false;
 	static bool show_menu = false;
     static bool show_on_right = true;
 	static int frame_cnt = 0;
@@ -1123,9 +1125,17 @@ void VideoInterrupt(void)
     buttons = pad.buttons ^ oldButtons; // set if button changed
     oldButtons = pad.buttons;
 
+    if (buttons & SCE_CTRL_START)
+        if (pad.buttons & SCE_CTRL_START)
+            input_mode = input_mode ? false : true;
+    if (!danzeff_isinitialized())
+        input_mode = false; // danzeff not loaded
+
 	if (buttons & SCE_CTRL_SELECT)
         if (pad.buttons & SCE_CTRL_SELECT)
             show_menu = show_menu ? false : true; // toggle imap/floppy/cdrom menu
+    if (input_mode)
+        show_menu = false;
     else
     {
         qualifiers = 0; // clear qualifiers when exit OSK
@@ -1150,7 +1160,12 @@ void VideoInterrupt(void)
             else if (psp_screen_d == VDEPTH_32BIT)
                 refresh24();
 
-            if (show_menu)
+            if (input_mode)
+            {
+                danzeff_moveTo(show_on_right ? d_x+d_w-150 : d_x, d_y+d_h-150);
+                danzeff_render();
+            }
+            else if (show_menu)
                 handle_menu(pad);
 
             vita2d_end_drawing();
@@ -1158,7 +1173,7 @@ void VideoInterrupt(void)
         }
 
 	// process inputs
-    if (!show_menu)
+    if (!input_mode && !show_menu)
     {
         if (touch.reportNum <= 0 && mouseClickedTouch)
         {
@@ -1248,6 +1263,110 @@ void VideoInterrupt(void)
             handle_keyboard();
         }
     }
+    else if (input_mode)
+    {
+        unsigned int key;
+        uint8 xlate_danzeff_us[128] = {
+            0, 0, 0, 0, 0, 0, 0, 0,
+            51, 0, 36, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 53, 0, 0, 0, 0,
+            49, 128+18, 128+39, 128+20, 128+21, 128+23, 128+26, 39,
+            128+25, 128+29, 128+28, 128+24, 43, 27, 47, 44,
+            29, 18, 19, 20, 21, 23, 22, 26,
+            28, 25, 128+41, 41, 128+43, 24, 128+47, 128+44,
+            128+19, 128+0, 128+11, 128+8, 128+2, 128+14, 128+3, 128+5,
+            128+4, 128+34, 128+38, 128+40, 128+37, 128+46, 128+45, 128+31,
+            128+35, 128+12, 128+15, 128+1, 128+17, 128+32, 128+9, 128+13,
+            128+7, 128+16, 128+6, 33, 42, 30, 128+22, 128+27,
+            50, 0, 11, 8, 2, 14, 3, 5,
+            4, 34, 38, 40, 37, 46, 45, 31,
+            35, 12, 15, 1, 17, 32, 9, 13,
+            7, 16, 6, 128+33, 128+42, 128+30, 128+50, 117
+        };
+        char qual_msg[5][12] = {
+            "\0",
+            " CMD ",
+            " OPT ",
+            " CTRL ",
+            " CMD+OPT "
+        };
+
+        if (buttons & SCE_CTRL_SELECT)
+            if (pad.buttons & SCE_CTRL_SELECT)
+                qualifiers = (qualifiers + 1) % 5;
+        //strcpy(msgtxt, qual_msg[qualifiers]);
+
+        // danzeff input
+        key = danzeff_readInput(pad);
+        switch (qualifiers)
+        {
+            case 1:
+            ADBKeyDown(55);
+            break;
+            case 2:
+            ADBKeyDown(58);
+            break;
+            case 3:
+            ADBKeyDown(54);
+            break;
+            case 4:
+            ADBKeyDown(55);
+            ADBKeyDown(58);
+        }
+        switch (key)
+        {
+            case 0: // no input
+            break;
+            case 1: // move left
+            show_on_right = false;
+            break;
+            case 2: // move right
+            show_on_right = true;
+            break;
+            case 3: // select
+            break;
+            case 4: // start
+            break;
+            case 8: // backspace
+            ADBKeyDown(51);
+            ADBKeyUp(51);
+            break;
+            case 10: // enter
+            ADBKeyDown(36);
+            ADBKeyUp(36);
+            break;
+            default: // ascii character
+            if (xlate_danzeff_us[key] < 128)
+            {
+                ADBKeyDown(xlate_danzeff_us[key]);
+                ADBKeyUp(xlate_danzeff_us[key]);
+            }
+            else
+            {
+                ADBKeyDown(56); // shift
+                ADBKeyDown(xlate_danzeff_us[key]&127);
+                ADBKeyUp(xlate_danzeff_us[key]&127);
+                ADBKeyUp(56);
+            }
+        }
+        switch (qualifiers)
+        {
+            case 1:
+            ADBKeyUp(55);
+            break;
+            case 2:
+            ADBKeyUp(58);
+            break;
+            case 3:
+            ADBKeyUp(54);
+            break;
+            case 4:
+            ADBKeyUp(55);
+            ADBKeyUp(58);
+        }
+    }
+
 
 	// Emergency quit requested? Then quit
 	if (emerg_quit)
