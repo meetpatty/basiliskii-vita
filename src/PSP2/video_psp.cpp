@@ -102,6 +102,10 @@ extern char *psp_floppy_inserted;                   // String: filename of flopp
 extern char *psp_cdrom_inserted;                    // String: filename of cdrom inserted
 extern bool psp_cdrom_locked;                       // Flag: cdrom lock
 
+static int DANZEFF_SCALE_COUNT = 2;
+static int danzeff_cur_scale = 0;
+static float danzeff_scales[] = { 1.0, 2.0 };
+
 // File handles are pointers to these structures
 struct file_handle {
 	char *name;		// Copy of device/file name
@@ -1162,7 +1166,7 @@ void VideoInterrupt(void)
 
             if (input_mode)
             {
-                danzeff_moveTo(show_on_right ? d_x+d_w-150 : d_x, d_y+d_h-150);
+                danzeff_moveTo(show_on_right ? d_x+d_w-(150*danzeff_scales[danzeff_cur_scale]) : d_x, d_y+d_h-(150*danzeff_scales[danzeff_cur_scale]));
                 danzeff_render();
             }
             else if (show_menu)
@@ -1319,10 +1323,22 @@ void VideoInterrupt(void)
             case 0: // no input
             break;
             case 1: // move left
-            show_on_right = false;
+            if (!show_on_right) {
+                danzeff_cur_scale = (danzeff_cur_scale+1) % DANZEFF_SCALE_COUNT;
+                danzeff_scale(danzeff_scales[danzeff_cur_scale]);
+            }
+            else {
+                show_on_right = false;
+            }
             break;
             case 2: // move right
-            show_on_right = true;
+            if (show_on_right) {
+                danzeff_cur_scale = (danzeff_cur_scale+1) % DANZEFF_SCALE_COUNT;
+                danzeff_scale(danzeff_scales[danzeff_cur_scale]);
+            }
+            else {
+                show_on_right = true;
+            }
             break;
             case 3: // select
             break;

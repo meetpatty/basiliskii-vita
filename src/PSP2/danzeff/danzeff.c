@@ -18,6 +18,7 @@ int selected_x = 1;
 int selected_y = 1;
 
 float moved_x = 0, moved_y = 0; // location that we are moved to
+float scale = 1.0;
 
 //Variable describing where each of the images is
 #define guiStringsSize 12 /* size of guistrings array */
@@ -165,7 +166,7 @@ void danzeff_load()
 	for (a = 0; a < guiStringsSize; a++)
 	{
 		SceUInt32 height, width;
-		
+
 		keyTextures[a] = vita2d_load_PNG_file(guiStrings[a]);
 	}
 	initialized = true;
@@ -191,6 +192,11 @@ void danzeff_moveTo(float newX, float newY)
 	moved_y = newY;
 }
 
+void danzeff_scale(float newScale)
+{
+	scale = newScale;
+}
+
 /* draw the keyboard at the current position */
 void danzeff_render()
 {
@@ -200,16 +206,16 @@ void danzeff_render()
 	///this is the whole background image, not including the special highlighted area
 	//if center is selected then draw the whole thing opaque
 	if (selected_x == 1 && selected_y == 1)
-		vita2d_draw_texture(keyTextures[6*mode + shifted*3], moved_x, moved_y);
+		vita2d_draw_texture_scale(keyTextures[6*mode + shifted*3], moved_x, moved_y, scale, scale);
 	else
-		vita2d_draw_texture(keyTextures[6*mode + shifted*3 + 1], moved_x, moved_y);
-	
+		vita2d_draw_texture_scale(keyTextures[6*mode + shifted*3 + 1], moved_x, moved_y, scale, scale);
+
 	///Draw the current Highlighted Selector (orange bit)
-	vita2d_draw_texture_part(keyTextures[6*mode + shifted*3 + 2],
+	vita2d_draw_texture_part_scale(keyTextures[6*mode + shifted*3 + 2],
 	//Offset from the current draw position to render at
-	moved_x + selected_x*43, moved_y + selected_y*43,
+	moved_x + selected_x*43*scale, moved_y + selected_y*43*scale,
 	//internal offset of the image
 	selected_x*64,selected_y*64,
-	64,
-	64);
+	64, 64,
+	scale, scale);
 }

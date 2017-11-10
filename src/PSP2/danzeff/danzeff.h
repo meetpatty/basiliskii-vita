@@ -39,6 +39,8 @@ void danzeff_moveTo(float newX, float newY);
 //draw the keyboard to the screen
 void danzeff_render();
 
+void danzeff_scale(float newScale);
+
 
 ///Functions only for particular renderers:
 
