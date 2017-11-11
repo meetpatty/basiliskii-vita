@@ -54,7 +54,13 @@ static vector<video_mode> VideoModes;
 
 // Constants
 const char KEYCODE_FILE_NAME[] = "BasiliskII_keycodes";
-
+const char QUAL_MSG[5][12] = {
+    "\0",
+    " CMD ",
+    " OPT ",
+    " CTRL ",
+    " CMD+OPT "
+};
 
 // Global variables
 static unsigned int __attribute__((aligned(16))) clut256[256];
@@ -1168,6 +1174,11 @@ void VideoInterrupt(void)
             {
                 danzeff_moveTo(show_on_right ? d_x+d_w-(150*danzeff_scales[danzeff_cur_scale]) : d_x, d_y+d_h-(150*danzeff_scales[danzeff_cur_scale]));
                 danzeff_render();
+                if (qualifiers > 0 && qualifiers < 5)
+                {
+                    vita2d_font_draw_text(font, 14, 530, fc, FONT_SIZE, QUAL_MSG[qualifiers]);
+                }
+
             }
             else if (show_menu)
                 handle_menu(pad);
@@ -1271,8 +1282,8 @@ void VideoInterrupt(void)
     {
         unsigned int key;
         uint8 xlate_danzeff_us[128] = {
-            0, 114, 117, 0, 0, 0, 0, 0, // empty string, insert, delete
-            51, 0, 36, 122, 120, 99, 118, 96, // F1-F5 after 36 (CR)
+            0, 0, 0, 0, 0, 0, 114, 117, // empty string, 1-4 are danzeff, insert, delete
+            51, 0, 36, 122, 120, 99, 118, 96, // backspace, F1-F5 after 36 (CR)
             97, 98, 100, 101, 109, 103, 111, 48, // F6-F12, tab
             115, 119, 116, 53, 121, 105, 107, 113, // home, end, pgup, esc, pgdown, prtscr, scrlock, pause
             49, 128+18, 128+39, 128+20, 128+21, 128+23, 128+26, 39,
@@ -1288,18 +1299,10 @@ void VideoInterrupt(void)
             35, 12, 15, 1, 17, 32, 9, 13,
             7, 16, 6, 128+33, 128+42, 128+30, 128+50, 117
         };
-        char qual_msg[5][12] = {
-            "\0",
-            " CMD ",
-            " OPT ",
-            " CTRL ",
-            " CMD+OPT "
-        };
 
         if (buttons & SCE_CTRL_SELECT)
             if (pad.buttons & SCE_CTRL_SELECT)
                 qualifiers = (qualifiers + 1) % 5;
-        //strcpy(msgtxt, qual_msg[qualifiers]);
 
         // danzeff input
         key = danzeff_readInput(pad);
