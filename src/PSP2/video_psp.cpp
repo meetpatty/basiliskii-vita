@@ -574,7 +574,6 @@ bool VideoInit(bool classic)
 	// Construct list of supported modes
 	add_video_modes(VDEPTH_4BIT);
 	add_video_modes(VDEPTH_8BIT);
-	add_video_modes(VDEPTH_8BIT);
 	add_video_modes(VDEPTH_16BIT);
 	add_video_modes(VDEPTH_32BIT);
 
