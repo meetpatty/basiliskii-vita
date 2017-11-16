@@ -251,10 +251,12 @@ static void add_video_modes(video_depth vdepth)
 {
 	add_mode(512, 384, 0x80, PSPBytesPerRow(512, vdepth), vdepth);
 	add_mode(640, 360, 0x81, PSPBytesPerRow(640, vdepth), vdepth);
-	add_mode(640, 480, 0x82, PSPBytesPerRow(640, vdepth), vdepth);
-	add_mode(726, 544, 0x83, PSPBytesPerRow(726, vdepth), vdepth);
-	add_mode(768, 432, 0x84, PSPBytesPerRow(768, vdepth), vdepth);
-	add_mode(768, 576, 0x85, PSPBytesPerRow(768, vdepth), vdepth);
+	add_mode(640, 400, 0x82, PSPBytesPerRow(640, vdepth), vdepth);
+	add_mode(640, 480, 0x83, PSPBytesPerRow(640, vdepth), vdepth);
+	add_mode(726, 544, 0x84, PSPBytesPerRow(726, vdepth), vdepth);
+	add_mode(768, 432, 0x85, PSPBytesPerRow(768, vdepth), vdepth);
+	add_mode(768, 576, 0x86, PSPBytesPerRow(768, vdepth), vdepth);
+
 }
 
 // Set Mac frame layout and base address (uses the_buffer/MacFrameBaseMac)
@@ -346,6 +348,12 @@ driver_fullscreen::driver_fullscreen(PSP_monitor_desc &m)
     psp_screen_x = width;
     psp_screen_y = height;
     psp_screen_d = mode.depth;
+    if (psp_lcd_aspect == 2 ) {
+        //fit: fill the screen vertically
+        //and adjust width by same scaling ratio to give square pixels
+        d_w = psp_screen_x*d_h*1.0/psp_screen_y;
+        d_x = (960-d_w)/2.0;
+    }
     scale_x = d_w*1.0/psp_screen_x;
     scale_y = d_h*1.0/psp_screen_y;
 
@@ -423,7 +431,9 @@ static void keycode_init(void)
 void psp_video_setup(void)
 {
     screen = vita2d_create_empty_texture_format(768, 576, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
-	screen_data = (unsigned int*)vita2d_texture_get_datap(screen);
+    // set filters to improve image quality in case the mac pixel to screen pixel mapping is not 1:1
+    vita2d_texture_set_filters(screen, SCE_GXM_TEXTURE_FILTER_LINEAR, SCE_GXM_TEXTURE_FILTER_LINEAR);
+    screen_data = (unsigned int*)vita2d_texture_get_datap(screen);
 
     vita2d_start_drawing();
     vita2d_clear_screen();
@@ -484,15 +494,25 @@ bool VideoInit(bool classic)
     SCR_HEIGHT = 544;
     DISP_BUF = 0;
 
-    if (psp_lcd_aspect)
+    switch (psp_lcd_aspect)
     {
+    case 1:
+        //16:9
         d_w = 960;
         d_h = 544;
         d_x = 0;
         d_y = 0;
-    }
-    else
-    {
+        break;
+    case 2:
+        //fit: d_w will be adjusted later to get square pixels
+        //and d_x will be adjusted later to center the image
+        d_w = 960;
+        d_h = 544;
+        d_x = 0;
+        d_y = 0;
+        break;
+    default: 
+        //4:3
         d_w = 726;
         d_h = 544;
         d_x = (960-726)/2;
@@ -515,19 +535,21 @@ bool VideoInit(bool classic)
 		default_mode = 0x80;
 	else if ((default_width == 640) && (default_height == 360))
 		default_mode = 0x81;
-	else if ((default_width == 640) && (default_height == 480))
+	else if ((default_width == 640) && (default_height == 400))
 		default_mode = 0x82;
-    else if ((default_width == 726) && (default_height == 544))
+	else if ((default_width == 640) && (default_height == 480))
 		default_mode = 0x83;
-	else if ((default_width == 768) && (default_height == 432))
+    else if ((default_width == 726) && (default_height == 544))
 		default_mode = 0x84;
-	else if ((default_width == 768) && (default_height == 576))
+	else if ((default_width == 768) && (default_height == 432))
 		default_mode = 0x85;
+	else if ((default_width == 768) && (default_height == 576))
+		default_mode = 0x86;
 	else {
-			default_width = 640;
-			default_height = 480;
+			default_width = 726;
+			default_height = 544;
 			default_depth = 8;
-			default_mode = 0x81;
+			default_mode = 0x84;
 	}
 
 	video_depth default_vdepth;

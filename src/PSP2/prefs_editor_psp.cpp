@@ -46,7 +46,7 @@ extern char *RequestString (char *initialStr);
  */
 
 // prefs with default values
-int psp_screen_mode = 1; // 640x480
+int psp_screen_mode = 4; // 726x544
 int psp_screen_depth = 1; // 256 color
 int psp_screen_rate = 0; // 60 Hz
 int psp_sound_enable = 1; // sound on
@@ -244,6 +244,7 @@ void psp_create_floppy(void *arg)
 	struct gui_list psp_aspect_list[] = {
 		{ "4:3", 0 },
 		{ "16:9", 1 },
+        { "Fit", 2},
 		{ 0, GUI_END_OF_LIST }
 	};
 
@@ -390,10 +391,11 @@ void psp_create_floppy(void *arg)
 	struct gui_list gfx_screen_list[] = {
 		{ "512x384", 0 },
 		{ "640x360", 1 },
-		{ "640x480", 2 },
-		{ "726x544", 3 },
-		{ "768x432", 3 },
-		{ "768x576", 4 },
+		{ "640x400", 2 },
+		{ "640x480", 3 },
+		{ "726x544", 4 },
+		{ "768x432", 5 },
+		{ "768x576", 6 },
 		{ 0, GUI_END_OF_LIST }
 	};
 
@@ -467,14 +469,16 @@ bool PrefsEditor(void)
             psp_screen_mode = 0;
         else if (width == 640 && height == 360)
             psp_screen_mode = 1;
-        else if (width == 640 && height == 480)
+        else if (width == 640 && height == 400)
             psp_screen_mode = 2;
-         else if (width == 726 && height == 544)
+        else if (width == 640 && height == 480)
             psp_screen_mode = 3;
-        else if (width == 768 && height == 432)
+         else if (width == 726 && height == 544)
             psp_screen_mode = 4;
-        else if (width == 768 && height == 576)
+        else if (width == 768 && height == 432)
             psp_screen_mode = 5;
+        else if (width == 768 && height == 576)
+            psp_screen_mode = 6;
         switch (depth)
         {
             case 4:
@@ -577,9 +581,10 @@ bool PrefsEditor(void)
 
     // set prefs from final values
 
-    char scrnmodes[6][4][12] = {
+    char scrnmodes[7][4][12] = {
         { "512/384/4", "512/384/8", "512/384/15", "512/384/24" },
         { "640/360/4", "640/360/8", "640/360/15", "640/360/24" },
+        { "640/400/4", "640/400/8", "640/400/15", "640/400/24" },
         { "640/480/4", "640/480/8", "640/480/15", "640/480/24" },
         { "726/544/4", "726/544/8", "726/544/15", "726/544/24" },
         { "768/432/4", "768/432/8", "768/432/15", "768/432/24" },
