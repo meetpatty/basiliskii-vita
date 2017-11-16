@@ -82,6 +82,7 @@ int psp_60hz_timing = 1; // default to relaxed timing
 
 extern char *psp_floppy_inserted;                    // String: filename of floppy inserted
 extern char *psp_cdrom_inserted;                     // String: filename of cdrom inserted
+extern char psp_home[256];
 
 // Memory support code
 
@@ -147,7 +148,7 @@ void psp_create_hardfile(void *arg)
     if (!psp_hardfile)
         return; // abort creation
 
-    strcpy(filename, HOME_DIR);
+    strcpy(filename, psp_home);
     strcat(filename, "hardfiles/");
     strcat(filename, psp_hardfile);
     sprintf(textbuf, "Making %d MB hardfile:\n\n%s", filesize, filename);
@@ -189,7 +190,7 @@ void psp_create_floppy(void *arg)
     if (!psp_hardfile)
         return; // abort creation
 
-    strcpy(filename, HOME_DIR);
+    strcpy(filename, psp_home);
     strcat(filename, "disks/");
     strcat(filename, psp_hardfile);
     sprintf(message, "Making 1.4 MB floppy:\n\n%s", filename);
@@ -645,8 +646,12 @@ bool PrefsEditor(void)
     psp_floppy_inserted = psp_floppyfile;
 
     PrefsRemoveItem("extfs");
-    if (psp_extfs_enable)
-        PrefsReplaceString("extfs", "files/");
+    if (psp_extfs_enable) {
+        char temp_path[256];
+        strcpy(temp_path, psp_home);
+        strcat(temp_path, "files");
+        PrefsReplaceString("extfs", temp_path);
+    }
 
     PrefsReplaceInt32("pspspeed", psp_cpu_speed);
 

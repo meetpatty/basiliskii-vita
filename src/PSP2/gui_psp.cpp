@@ -22,6 +22,7 @@ extern char *RequestFile (char *initialPath);
 
 extern bool emerg_quit;						    // Flag: emergency quit requested
 
+extern char psp_home[256];
 
 /*
  * OSK support code
@@ -194,7 +195,7 @@ void do_gui(struct gui_menu *menu, void *menufn, char *exit_msg)
 						sceCtrlPeekBufferPositive(0, &pad, 1);
 					if (*(int *)menu[csel].field1)
 						free(*(char **)menu[csel].field1);
-					strcpy(temp, HOME_DIR);
+					strcpy(temp, psp_home);
 					strcat(temp, (char *)menu[csel].field2);
 					strcat(temp, "/");
 					req = RequestFile(temp);

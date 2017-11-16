@@ -41,9 +41,10 @@ prefs_desc platform_prefs_items[] = {
 	{NULL, TYPE_END, false, NULL} // End of list
 };
 
+extern char psp_home[256];
 
 // Preferences file name and path
-const char PREFS_FILE_NAME[] = HOME_DIR "BasiliskII_prefs";
+char PREFS_FILE_NAME[256];
 
 
 /*
@@ -52,6 +53,9 @@ const char PREFS_FILE_NAME[] = HOME_DIR "BasiliskII_prefs";
 
 void LoadPrefs(void)
 {
+    strcpy(PREFS_FILE_NAME, psp_home);
+    strcat(PREFS_FILE_NAME, "BasiliskII_prefs");
+
 	// Read preferences from settings file
 	FILE *f = fopen(PREFS_FILE_NAME, "r");
 	if (f != NULL) {

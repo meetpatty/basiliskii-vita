@@ -103,6 +103,7 @@ static int psp_lcd_aspect = 0; // 4:3
 extern bool emerg_quit;     						// Flag: emergency quit requested
 extern int FONT_SIZE;
 extern vita2d_font *font;
+extern char psp_home[256];
 
 extern char *psp_floppy_inserted;                   // String: filename of floppy inserted
 extern char *psp_cdrom_inserted;                    // String: filename of cdrom inserted
@@ -949,19 +950,19 @@ void handle_menu(SceCtrlData pad)
 
     if (numcdroms == -1)
     {
-        strcpy(temp, HOME_DIR);
+        strcpy(temp, psp_home);
         strcat(temp, "cdroms");
         numcdroms = parse_dir(temp, cdroms, MAXCDROMS);
     }
     if (numfloppies == -1)
     {
-        strcpy(temp, HOME_DIR);
+        strcpy(temp, psp_home);
         strcat(temp, "disks");
         numfloppies = parse_dir(temp, floppies, MAXFLOPPIES);
     }
     if (numimaps == -1)
     {
-        strcpy(temp, HOME_DIR);
+        strcpy(temp, psp_home);
         strcat(temp, "imaps");
         numimaps = parse_dir(temp, imaps, MAXIMAPS);
     }

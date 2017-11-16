@@ -38,8 +38,6 @@
 
 #define lerp(value, from_max, to_max) ((((value*10) * (to_max*10))/(from_max*10))/10)
 
-#define HOME_DIR "ux0:data/BasiliskII/"
-
 /* Mac and host address space are distinct */
 #define REAL_ADDRESSING 0
 

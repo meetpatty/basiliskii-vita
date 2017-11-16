@@ -97,7 +97,13 @@ uint8 *ScratchMem = NULL;			                // Scratch memory for Mac ROM writes
 
 bool emerg_quit = false;						    // Flag: emergency quit requested
 
-char* psp_home = HOME_DIR;
+char psp_home[256];
+char temp[256];
+char *partitions[] = { "ux0:", "uma0:" };
+char *data_dir = "data/BasiliskII/";
+char *data_sub_dirs[] = { "cdroms", "disks", "files", "hardfiles", "imaps", "roms" };
+int num_partitions = 2;
+int num_data_sub_dirs = 6;
 
 int psp_net_error = 0;
 int psp_net_available = 0;
@@ -155,41 +161,42 @@ int main(int argc, char **argv)
 	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
     sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
 
-    int d = sceIoDopen(HOME_DIR "cdroms");
-    if (d >= 0)
-        sceIoDclose(d);
-    else
-        sceIoMkdir(HOME_DIR "cdroms", 0777);
+    // Print some info
+    psvDebugScreenClear(0xFF000000);
+    psvDebugScreenPrintf("\n\n  ");
+    psvDebugScreenPrintf(Get_String(STR_ABOUT_TEXT1), VERSION_MAJOR, VERSION_MINOR);
+    psvDebugScreenPrintf("\n  %s\n", Get_String(STR_ABOUT_TEXT2));
+    sceKernelDelayThread(2*1000*1000);
 
-    d = sceIoDopen(HOME_DIR "disks");
-    if (d >= 0)
-        sceIoDclose(d);
-    else
-        sceIoMkdir(HOME_DIR "disks", 0777);
+    int i, d, found = 0;
+    for (i = 0; i < num_partitions; i++) {
+        strcpy(psp_home, partitions[i]);
+        strcat(psp_home, data_dir);
 
-    d = sceIoDopen(HOME_DIR "files");
-    if (d >= 0)
-        sceIoDclose(d);
-    else
-        sceIoMkdir(HOME_DIR "files", 0777);
+        d = sceIoDopen(psp_home);
+        if (d >= 0) {
+            sceIoDclose(d);
+            found = 1;
+            break;
+        }
+    }
 
-    d = sceIoDopen(HOME_DIR "hardfiles");
-    if (d >= 0)
-        sceIoDclose(d);
-    else
-        sceIoMkdir(HOME_DIR "hardfiles", 0777);
+    if (!found) {
+        psvDebugScreenPrintf("\n\n  ");
+        psvDebugScreenPrintf("Data directory not found! Exiting...");
+        sceKernelDelayThread(2*1000*1000);
+        return 0;
+    }
 
-    d = sceIoDopen(HOME_DIR "imaps");
-    if (d >= 0)
-        sceIoDclose(d);
-    else
-        sceIoMkdir(HOME_DIR "imaps", 0777);
-
-    d = sceIoDopen(HOME_DIR "roms");
-    if (d >= 0)
-        sceIoDclose(d);
-    else
-        sceIoMkdir(HOME_DIR "roms", 0777);
+    for (i = 0; i < num_data_sub_dirs; i++) {
+        strcpy(temp, psp_home);
+        strcat(temp, data_sub_dirs[i]);
+        d = sceIoDopen(temp);
+        if (d >= 0)
+            sceIoDclose(d);
+        else
+            sceIoMkdir(temp, 0777);
+    }
 
     psp_time_init();
 
@@ -202,15 +209,6 @@ int main(int argc, char **argv)
 	// Initialize variables
 	RAMBaseHost = NULL;
 	ROMBaseHost = NULL;
-
-	// Print some info
-    psvDebugScreenSetBgColor(0xFF000000);
-    psvDebugScreenSetFgColor(0xFFFFFFFF);
-    psvDebugScreenClear(0xFF000000);
-	psvDebugScreenPrintf("\n\n  ");
-	psvDebugScreenPrintf(Get_String(STR_ABOUT_TEXT1), VERSION_MAJOR, VERSION_MINOR);
-	psvDebugScreenPrintf("\n  %s\n", Get_String(STR_ABOUT_TEXT2));
-    sceKernelDelayThread(2*1000*1000);
 
 	// Read preferences
 	PrefsInit(argc, argv);
