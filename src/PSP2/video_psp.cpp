@@ -349,8 +349,8 @@ driver_fullscreen::driver_fullscreen(PSP_monitor_desc &m)
     psp_screen_y = height;
     psp_screen_d = mode.depth;
     if (psp_lcd_aspect == 2 ) {
-        //square-pixels: fill the screen vertically
-        //and adjust width by same scaling ratio
+        //fit: fill the screen vertically
+        //and adjust width by same scaling ratio to give square pixels
         d_w = psp_screen_x*d_h*1.0/psp_screen_y;
         d_x = (960-d_w)/2.0;
     }
@@ -497,14 +497,15 @@ bool VideoInit(bool classic)
     switch (psp_lcd_aspect)
     {
     case 1:
-        //fullscreen stretch
+        //16:9
         d_w = 960;
         d_h = 544;
         d_x = 0;
         d_y = 0;
         break;
     case 2:
-        //square pixels: d_w and d_x will be adjusted later
+        //fit: d_w will be adjusted later to get square pixels
+        //and d_x will be adjusted later to center the image
         d_w = 960;
         d_h = 544;
         d_x = 0;

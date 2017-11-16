@@ -244,7 +244,7 @@ void psp_create_floppy(void *arg)
 	struct gui_list psp_aspect_list[] = {
 		{ "4:3", 0 },
 		{ "16:9", 1 },
-        { "square pixels", 2},
+        { "Fit", 2},
 		{ 0, GUI_END_OF_LIST }
 	};
 
