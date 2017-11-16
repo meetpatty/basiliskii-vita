@@ -511,7 +511,7 @@ bool VideoInit(bool classic)
         d_x = 0;
         d_y = 0;
         break;
-    default: 
+    default:
         //4:3
         d_w = 726;
         d_h = 544;
@@ -661,10 +661,12 @@ struct fileentries {
 static struct fileentries cdroms[MAXCDROMS];
 static struct fileentries floppies[MAXFLOPPIES];
 static struct fileentries imaps[MAXIMAPS];
+static char* aspectratios[] = { "4:3", "16:9", "Fit" };
 
 static int numcdroms = -1;
 static int numfloppies = -1;
 static int numimaps = -1;
+static int numaspectratios = 3;
 
 static bool caps_lock = false;
 
@@ -941,7 +943,7 @@ void handle_menu(SceCtrlData pad)
     static uint32 oldButtons = 0;
     static uint32 sel = 0;
     static uint32 max = 0;
-    static uint32 idx = 0; // 0 = input maps, 1 = floppies, 2 = cdroms
+    static uint32 idx = 0; // 0 = input maps, 1 = floppies, 2 = cdroms, 3 = aspect ratio
     char temp[256];
     uint32 fc = 0xFF8888FF;
 
@@ -964,17 +966,13 @@ void handle_menu(SceCtrlData pad)
         numimaps = parse_dir(temp, imaps, MAXIMAPS);
     }
 
-    // safety check
-    if (numcdroms == 0 && numfloppies == 0 && numimaps == 0)
-        return;
-
     // take care of initially clear max
     while (max == 0)
     {
-        max = (idx == 0) ? numimaps : (idx == 1) ? numfloppies : numcdroms;
+        max = (idx == 0) ? numimaps : (idx == 1) ? numfloppies : (idx == 2) ? numcdroms : numaspectratios;
         if (max)
             break;
-        idx = idx<2 ? idx+1 : 0;
+        idx = idx<3 ? idx+1 : 0;
     }
 
     buttons = pad.buttons ^ oldButtons; // set if button changed
@@ -984,29 +982,29 @@ void handle_menu(SceCtrlData pad)
         if (pad.buttons & SCE_CTRL_UP)
         {
             // dec index
-            idx = idx>0 ? idx-1 : 2;
+            idx = idx>0 ? idx-1 : 3;
             sel = 0;
             max = 0;
             while (max == 0)
             {
-                max = (idx == 0) ? numimaps : (idx == 1) ? numfloppies : numcdroms;
+                max = (idx == 0) ? numimaps : (idx == 1) ? numfloppies : (idx == 2) ? numcdroms : numaspectratios;
                 if (max)
                     break;
-                idx = idx>0 ? idx-1 : 2;
+                idx = idx>0 ? idx-1 : 3;
             }
         }
         else if (pad.buttons & SCE_CTRL_DOWN)
         {
             // inc index
-            idx = idx<2 ? idx+1 : 0;
+            idx = idx<3 ? idx+1 : 0;
             sel = 0;
             max = 0;
             while (max == 0)
             {
-                max = (idx == 0) ? numimaps : (idx == 1) ? numfloppies : numcdroms;
+                max = (idx == 0) ? numimaps : (idx == 1) ? numfloppies : (idx == 2) ? numcdroms : numaspectratios;
                 if (max)
                     break;
-                idx = idx<2 ? idx+1 : 0;
+                idx = idx<3 ? idx+1 : 0;
             }
         }
 
@@ -1034,10 +1032,17 @@ void handle_menu(SceCtrlData pad)
     }
     else if (idx == 2)
     {
-        // doing cdroms
+        // doing aspect ratio
         strcpy(temp, "cdrom: ");
         strcat(temp, cdroms[sel].filename);
         vita2d_font_draw_text(font, 14, 530, fc, FONT_SIZE, "Press X to mount cdrom");
+    }
+    else if (idx == 3)
+    {
+        // doing cdroms
+        strcpy(temp, "aspect: ");
+        strcat(temp, aspectratios[sel]);
+        vita2d_font_draw_text(font, 14, 530, fc, FONT_SIZE, "Press X to change aspect ratio");
     }
 
     if (strlen(temp) > 0)
@@ -1126,6 +1131,31 @@ void handle_menu(SceCtrlData pad)
                         cdrom_fh->fd = -1;
                     }
                 }
+            }
+            else if (idx == 3) {
+                if (sel == 2) {
+                    //fit: fill the screen vertically
+                    //and adjust width by same scaling ratio to give square pixels
+                    d_w = psp_screen_x*d_h*1.0/psp_screen_y;
+                    d_x = (960-d_w)/2.0;
+                    d_y = 0;
+                }
+                else if (sel == 1)
+                {
+                    d_w = 960;
+                    d_x = 0;
+                    d_y = 0;
+                }
+                else
+                {
+                    d_w = 726;
+                    d_x = (960-726)/2;
+                    d_y = 0;
+                }
+                d_h = 544;
+                psp_lcd_aspect = sel;
+                scale_x = d_w*1.0/psp_screen_x;
+                scale_y = d_h*1.0/psp_screen_y;
             }
         }
 }
