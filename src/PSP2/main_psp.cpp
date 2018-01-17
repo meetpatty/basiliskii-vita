@@ -158,7 +158,7 @@ int main(int argc, char **argv)
     psvDebugScreenSetFgColor(0xFFFFFFFF);
     psvDebugScreenClear(0xFF000000);
 
-	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG);
+	sceCtrlSetSamplingMode(SCE_CTRL_MODE_ANALOG_WIDE);
     sceTouchSetSamplingState(SCE_TOUCH_PORT_FRONT, SCE_TOUCH_SAMPLING_STATE_START);
 
     // Print some info
