@@ -1183,7 +1183,7 @@ void VideoInterrupt(void)
     uint32 fc = 0xFF8888FF;
     static int stick[16] = { -8, -8, -6, -4, -2, -1, -1, 0, 0, 0, 1, 1, 2, 4, 6, 8 };
 
-	sceCtrlReadBufferPositive(0, &pad, 1);
+	sceCtrlPeekBufferPositive(0, &pad, 1);
 	sceTouchPeek(0, &touch, 1);
     buttons = pad.buttons ^ oldButtons; // set if button changed
     oldButtons = pad.buttons;
@@ -1295,9 +1295,9 @@ void VideoInterrupt(void)
         {
 			ADBSetRelMouseMode(true);
 			int i = 0;
-			for (int i = 0; i < ret; i++)
-			{
-				ADBMouseMoved(m_reports[i].rel_x*2, m_reports[i].rel_y*2);
+
+			if (m_reports[0].rel_x || m_reports[0].rel_y) {
+				ADBMouseMoved(m_reports[0].rel_x*2, m_reports[0].rel_y*2);
 			}
 
 			if (m_reports[i].buttons & 0x1) { //Left mouse button
