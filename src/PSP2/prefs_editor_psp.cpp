@@ -261,6 +261,7 @@ void psp_create_floppy(void *arg)
 		{ "300 MHz", 4 },
 		{ "333 MHz", 5 },
 		{ "444 MHz", 6 },
+		{ "Max CPU/GPU/Bus", 7 },
 		{ 0, GUI_END_OF_LIST }
 	};
 

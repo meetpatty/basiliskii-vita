@@ -245,6 +245,13 @@ int main(int argc, char **argv)
         case 6:
         scePowerSetArmClockFrequency(444);
         break;
+        case 7:
+        // Setting maximum clocks
+        scePowerSetArmClockFrequency(444);
+        scePowerSetBusClockFrequency(222);
+        scePowerSetGpuClockFrequency(222);
+        scePowerSetGpuXbarClockFrequency(166);
+        break;
     }
 
 	// Read RAM size
