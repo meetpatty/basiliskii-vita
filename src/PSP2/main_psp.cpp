@@ -57,6 +57,7 @@ using std::string;
 #include "user_strings.h"
 #include "version.h"
 #include "main.h"
+#include "psp2_touch.h"
 
 #define Get_String(x) const_cast<char*>(GetString(x))
 
@@ -205,6 +206,8 @@ int main(int argc, char **argv)
 	gui_font_init();
 
 	danzeff_load();
+
+	psp2InitTouch();
 
 	// Initialize variables
 	RAMBaseHost = NULL;

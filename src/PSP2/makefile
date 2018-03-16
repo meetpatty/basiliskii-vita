@@ -14,7 +14,8 @@ OBJS = ../main.o main_psp.o ../prefs.o ../prefs_items.o prefs_psp.o \
 	../disk.o ../cdrom.o ../scsi.o scsi_psp.o ../video.o \
 	video_psp.o ../audio.o audio_psp.o ../extfs.o extfs_psp.o \
 	ftruncate.o ../user_strings.o user_strings_psp.o \
-	gui_psp.o reqfile.o debugScreen.o danzeff/danzeff.o\
+	gui_psp.o reqfile.o debugScreen.o danzeff/danzeff.o \
+	psp2_touch.o \
 	$(CPUOBJS)
 
 INCLUDES = -I../include -I./include -I. -I../uae_cpu -I../uae_cpu/fpu/softfloat
