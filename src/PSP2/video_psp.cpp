@@ -853,7 +853,7 @@ void handle_keyboard(void)
 		}
 		else if (numReports) {
 
-			if (k_reports[numReports-1].modifiers[1] & 0x2) //Caps Lock
+			if (k_reports[numReports - 1].modifiers[1] & 0x2) //Caps Lock
 			{
 				if (!caps_lock) {
 					caps_lock = true;
@@ -868,7 +868,7 @@ void handle_keyboard(void)
 				}
 			}
 
-			int l_ctrl_pressed = k_reports[numReports-1].modifiers[0] & 0x1 || prev_modifiers & 0x10;
+			int l_ctrl_pressed = k_reports[numReports - 1].modifiers[0] & 0x1 || prev_modifiers & 0x10;
 			int l_ctrl_prev_pressed = prev_modifiers & 0x1 || prev_modifiers & 0x10;
 			if (l_ctrl_pressed)
 			{
@@ -883,7 +883,7 @@ void handle_keyboard(void)
 				}
 			}
 
-			int l_shift_pressed = k_reports[numReports-1].modifiers[0] & 0x2 || prev_modifiers & 0x20;
+			int l_shift_pressed = k_reports[numReports - 1].modifiers[0] & 0x2 || prev_modifiers & 0x20;
 			int l_shift_prev_pressed = prev_modifiers & 0x2 || prev_modifiers & 0x20;
 			if (l_shift_pressed)
 			{
@@ -898,7 +898,7 @@ void handle_keyboard(void)
 				}
 			}
 
-			int l_alt_pressed = k_reports[numReports-1].modifiers[0] & 0x4 || prev_modifiers & 0x40;
+			int l_alt_pressed = k_reports[numReports - 1].modifiers[0] & 0x4 || prev_modifiers & 0x40;
 			int l_alt_prev_pressed = prev_modifiers & 0x4 || prev_modifiers & 0x4;
 			if (l_alt_pressed)
 			{
@@ -913,7 +913,7 @@ void handle_keyboard(void)
 				}
 			}
 
-			int l_logo_pressed = k_reports[numReports-1].modifiers[0] & 0x8 || prev_modifiers & 0x80;
+			int l_logo_pressed = k_reports[numReports - 1].modifiers[0] & 0x8 || prev_modifiers & 0x80;
 			int l_logo_prev_pressed = prev_modifiers & 0x8 || prev_modifiers & 0x80;
 			if (l_logo_pressed)
 			{
@@ -928,13 +928,13 @@ void handle_keyboard(void)
 				}
 			}
 
-			prev_modifiers = k_reports[numReports-1].modifiers[0];
+			prev_modifiers = k_reports[numReports - 1].modifiers[0];
 
 			int i, j;
 
 			for (i = 0; i < 6; i++) {
 
-				int keyCode = k_reports[numReports-1].keycodes[i];
+				int keyCode = k_reports[numReports - 1].keycodes[i];
 
 				if (keyCode != prev_keys[i]) {
 
@@ -1339,42 +1339,45 @@ void VideoInterrupt(void)
         }
 
 		//HID mouse
-		int ret = sceHidMouseRead(mouse_hid_handle, (SceHidMouseReport**)&m_reports, 1);
-		if (ret > 0)
+		int numReports = sceHidMouseRead(mouse_hid_handle, (SceHidMouseReport**)&m_reports, SCE_HID_MAX_REPORT);
+		if (numReports > 0)
         {
-			ADBSetRelMouseMode(true);
+			for (int i = 0; i <= numReports - 1; i++)
+			{
+				ADBSetRelMouseMode(true);
 
-			if (m_reports[0].rel_x || m_reports[0].rel_y) {
-				hires_dx += (int) (m_reports[0].rel_x * 2 * 256 * psp_pointer_speed_factor);
-		        hires_dy += (int) (m_reports[0].rel_y * 2 * 256 * psp_pointer_speed_factor);
-				ADBMouseMoved(hires_dx / 256, hires_dy / 256);
-	            hires_dx %= 256;
-	            hires_dy %= 256;
-			}
+				if (m_reports[i].rel_x || m_reports[i].rel_y) {
+					hires_dx += (int) (m_reports[i].rel_x * 2 * 256 * psp_pointer_speed_factor);
+					hires_dy += (int) (m_reports[i].rel_y * 2 * 256 * psp_pointer_speed_factor);
+					ADBMouseMoved(hires_dx / 256, hires_dy / 256);
+					hires_dx %= 256;
+					hires_dy %= 256;
+				}
 
-			if (m_reports[0].buttons & 0x1) { //Left mouse button
-				if (!leftMouseClicked) {
-					leftMouseClicked = true;
-					ADBMouseDown(0);
+				if (m_reports[i].buttons & 0x1) { //Left mouse button
+					if (!leftMouseClicked) {
+						leftMouseClicked = true;
+						ADBMouseDown(0);
+					}
 				}
-			}
-			else {
-				if (leftMouseClicked) {
-					leftMouseClicked = false;
-					ADBMouseUp(0);
+				else {
+					if (leftMouseClicked) {
+						leftMouseClicked = false;
+						ADBMouseUp(0);
+					}
 				}
-			}
 
-			if (m_reports[0].buttons & 0x2) { //Right mouse button
-				if (!rightMouseClicked) {
-					rightMouseClicked = true;
-					ADBMouseDown(1);
+				if (m_reports[i].buttons & 0x2) { //Right mouse button
+					if (!rightMouseClicked) {
+						rightMouseClicked = true;
+						ADBMouseDown(1);
+					}
 				}
-			}
-			else {
-				if (rightMouseClicked) {
-					rightMouseClicked = false;
-					ADBMouseUp(1);
+				else {
+					if (rightMouseClicked) {
+						rightMouseClicked = false;
+						ADBMouseUp(1);
+					}
 				}
 			}
         }
