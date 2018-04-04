@@ -1319,13 +1319,13 @@ void VideoInterrupt(void)
         int x = (pad.lx - 128) * 256;
         int y = (pad.ly - 128) * 256;
         rescaleAnalog(&x, &y, psp_analog_dead);
-        hires_dx += (int) (x * psp_pointer_speed_factor);
-        hires_dy += (int) (y * psp_pointer_speed_factor);
+        hires_dx += (int) (x / 16 * psp_pointer_speed_factor);
+        hires_dy += (int) (y / 16 * psp_pointer_speed_factor);
         if (hires_dx != 0 || hires_dy != 0) {
             ADBSetRelMouseMode(true);
-            ADBMouseMoved(hires_dx / 4096, hires_dy / 4096);
-            hires_dx %= 4096;
-            hires_dy %= 4096;
+            ADBMouseMoved(hires_dx / 256, hires_dy / 256);
+            hires_dx %= 256;
+            hires_dy %= 256;
         }
 
         for (int i=0; i<NUM_MAPS; i++)
@@ -1343,13 +1343,16 @@ void VideoInterrupt(void)
 		if (ret > 0)
         {
 			ADBSetRelMouseMode(true);
-			int i = 0;
 
 			if (m_reports[0].rel_x || m_reports[0].rel_y) {
-				ADBMouseMoved(m_reports[0].rel_x*2, m_reports[0].rel_y*2);
+				hires_dx += (int) (m_reports[0].rel_x * 2 * 256 * psp_pointer_speed_factor);
+		        hires_dy += (int) (m_reports[0].rel_y * 2 * 256 * psp_pointer_speed_factor);
+				ADBMouseMoved(hires_dx / 256, hires_dy / 256);
+	            hires_dx %= 256;
+	            hires_dy %= 256;
 			}
 
-			if (m_reports[i].buttons & 0x1) { //Left mouse button
+			if (m_reports[0].buttons & 0x1) { //Left mouse button
 				if (!leftMouseClicked) {
 					leftMouseClicked = true;
 					ADBMouseDown(0);
@@ -1362,7 +1365,7 @@ void VideoInterrupt(void)
 				}
 			}
 
-			if (m_reports[i].buttons & 0x2) { //Right mouse button
+			if (m_reports[0].buttons & 0x2) { //Right mouse button
 				if (!rightMouseClicked) {
 					rightMouseClicked = true;
 					ADBMouseDown(1);
