@@ -1322,8 +1322,12 @@ void VideoInterrupt(void)
         hires_dx += (int) (x / 16 * psp_pointer_speed_factor);
         hires_dy += (int) (y / 16 * psp_pointer_speed_factor);
         if (hires_dx != 0 || hires_dy != 0) {
-            ADBSetRelMouseMode(true);
-            ADBMouseMoved(hires_dx / 256, hires_dy / 256);
+            int x_rel = hires_dx / 256;
+            int y_rel = hires_dy / 256;
+            if (x_rel || y_rel) {
+                ADBSetRelMouseMode(true);
+                ADBMouseMoved(x_rel, y_rel);
+            }
             hires_dx %= 256;
             hires_dy %= 256;
         }

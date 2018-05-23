@@ -393,13 +393,17 @@ void psp2ProcessFingerMotion(TouchEvent *event) {
 				psp2ConvertTouchXYToGameXY(event->tfinger.x, event->tfinger.y, &x, &y);
 				ADBMouseMoved(x, y);
 			} else {
-				ADBSetRelMouseMode(true);
 				// for relative mode, use the pointer speed setting
 				int dx = event->tfinger.dx * 960.0 * 256 * psp_pointer_speed_factor;
 				int dy = event->tfinger.dy * 544.0 * 256 * psp_pointer_speed_factor;
 				hires_dx += dx;
 				hires_dy += dy;
-				ADBMouseMoved(hires_dx / 256, hires_dy / 256);
+				int x_rel = hires_dx / 256;
+				int y_rel = hires_dy / 256;
+				if (x_rel || y_rel) {
+					ADBSetRelMouseMode(true);
+					ADBMouseMoved(x_rel, y_rel);
+				}
 				hires_dx %= 256;
 				hires_dy %= 256;
 			}
