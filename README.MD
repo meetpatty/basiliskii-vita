@@ -3,7 +3,7 @@ Overview
 
 This is a release of MeetPatty’s Basilisk II Mac Emulator for Vita with the changes listed below. My earlier changes to 0.32 have already been incorporated into the upstream repository.
 
-![](https://s14.postimg.cc/649ygto0x/5_EEA1_E55-_BCC1-409_C-9_FB9-4_B8954_ED93_C1.jpg)
+![](screenshots/basiliskii_vita_1.jpg)
 
 Thanks to MeetPatty for an amazing port of this emulator.
 
