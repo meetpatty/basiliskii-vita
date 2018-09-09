@@ -1181,18 +1181,61 @@ void handle_menu(SceCtrlData pad)
 void rescaleAnalog(int *x, int *y, int dead) {
 	//radial and scaled deadzone
 	//http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
+	//input and output values go from -32767...+32767;
 
-	float analogX = *x;
-	float analogY = *y;
-	float deadZone = dead;
-	float maximum = 32768.0f;
+	//the maximum is adjusted to account for SCE_CTRL_MODE_DIGITALANALOG_WIDE
+	//where a reported maximum axis value corresponds to 80% of the full range
+	//of motion of the analog stick
+
+	if (dead == 0) return;
+	if (dead >= 32767){
+		*x = 0;
+		*y = 0;
+		return;
+	}
+
+	const float maxAxis = 32767.0f;
+	float analogX = (float) *x;
+	float analogY = (float) *y;
+	float deadZone = (float) dead;
+
 	float magnitude = sqrt(analogX * analogX + analogY * analogY);
-	if (magnitude >= deadZone)
-	{
+	if (magnitude >= deadZone){
+		//adjust maximum magnitude
+		float absAnalogX = fabs(analogX);
+		float absAnalogY = fabs(analogY);
+		float maxX;
+		float maxY;
+		if (absAnalogX > absAnalogY){
+			maxX = maxAxis;
+			maxY = (maxAxis * analogY) / absAnalogX;
+		}else{
+			maxX = (maxAxis * analogX) / absAnalogY;
+			maxY = maxAxis;
+		}
+		float maximum = sqrt(maxX * maxX + maxY * maxY);
+		if (maximum > 1.25f * maxAxis) maximum = 1.25f * maxAxis;
+		if (maximum < magnitude) maximum = magnitude;
+
+		// find scaled axis values with magnitudes between zero and maximum
 		float scalingFactor = maximum / magnitude * (magnitude - deadZone) / (maximum - deadZone);		
-		*x = (int) analogX * scalingFactor;
-		*y = (int) analogY * scalingFactor;
-	} else {
+		analogX = (analogX * scalingFactor);
+		analogY = (analogY * scalingFactor);
+
+		// clamp to ensure results will never exceed the maxAxis value
+		float clampingFactor = 1.0f;
+		absAnalogX = fabs(analogX);
+		absAnalogY = fabs(analogY);
+		if (absAnalogX > maxAxis || absAnalogY > maxAxis){
+			if (absAnalogX > absAnalogY)
+				clampingFactor = maxAxis / absAnalogX;
+			else
+				clampingFactor = maxAxis / absAnalogY;
+		}
+
+		*x = (int) (clampingFactor * analogX);
+		*y = (int) (clampingFactor * analogY);
+	}else{
 		*x = 0;
 		*y = 0;
 	}

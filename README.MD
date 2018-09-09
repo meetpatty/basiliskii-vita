@@ -283,6 +283,10 @@ Basilisk II Key Codes
 
 Changelog 
 -----------
+0.33f
+
+- improve pointer response to diagonal stick directions
+
 0.33e
 
 - remove bluetooth mouse lag
