@@ -1359,11 +1359,11 @@ void VideoInterrupt(void)
         }
         
         // mouse
-        int x = (pad.lx - 128) * 256;
-        int y = (pad.ly - 128) * 256;
+        int x = (pad.lx - 127) * 256;
+        int y = (pad.ly - 127) * 256;
         rescaleAnalog(&x, &y, psp_analog_dead);
-        hires_dx += (int) (x / 16 * psp_pointer_speed_factor);
-        hires_dy += (int) (y / 16 * psp_pointer_speed_factor);
+        hires_dx += (int) ((x * psp_pointer_speed_factor) / 16);
+        hires_dy += (int) ((y * psp_pointer_speed_factor) / 16);
         if (hires_dx != 0 || hires_dy != 0) {
             int x_rel = hires_dx / 256;
             int y_rel = hires_dy / 256;

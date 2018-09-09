@@ -283,6 +283,11 @@ Basilisk II Key Codes
 
 Changelog 
 -----------
+
+0.33g
+
+- further improve pointer motion with analog stick
+
 0.33f
 
 - improve pointer response to diagonal stick directions
