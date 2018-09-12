@@ -1,30 +1,7 @@
 Overview
 =====
 
-This is a release of MeetPatty’s Basilisk II Mac Emulator for Vita with the changes listed below. My earlier changes to 0.32 have already been incorporated into the upstream repository.
-
 ![](screenshots/basiliskii_vita_1.jpg)
-
-Thanks to MeetPatty for an amazing port of this emulator.
-
-Thanks to my supporters on Patreon: Andyways, CountDuckula, and Sean Ritzo.
-
-This release is for anyone who wants to try it out in the meantime before MeetPatty releases a new official version.
-
-Indirect touch controls can now be enabled in the menu.
-
-Indirect Touch Controls
-=====
-
-Indirect touch controls are always used on the rear panel. On the front panel, the default is to use direct touch (pointer jumps to finger), but indirect controls can be enabled in the menu. 
-
-For multi-touch gestures, the fingers have to be far enough apart from each other, so that the Vita will not erroneously recognize them as a single finger. Otherwise the pointer will jump around.
-
-- Single finger drag: move the mouse pointer, how far the pointer moves in response to finger motion depends on the Mouse Speed setting
-- Single finger short tap: left mouse button. 
-- One finger short tap while holding another finger: right mouse button. 
-- Long second finger tap while holding another finger: initiate left mouse button drag and drop, useful to hold left button down to bring up menus. 
-- Long third finger tap while holding two other fingers: initiate right mouse button drag and drop. Drag and drop stops when last finger is released.
 
 Basilisk II for the Vita
 =======
@@ -280,6 +257,19 @@ Basilisk II Key Codes
 255     No key press
 256     Mouse button 1
 `````
+
+Indirect Touch Controls
+=====
+
+Indirect touch controls are always used on the rear panel. On the front panel, the default is to use direct touch (pointer jumps to finger), but indirect controls can be enabled in the menu. 
+
+For multi-touch gestures, the fingers have to be far enough apart from each other, so that the Vita will not erroneously recognize them as a single finger. Otherwise the pointer will jump around.
+
+- Single finger drag: move the mouse pointer, how far the pointer moves in response to finger motion depends on the Mouse Speed setting
+- Single finger short tap: left mouse button. 
+- One finger short tap while holding another finger: right mouse button. 
+- Long second finger tap while holding another finger: initiate left mouse button drag and drop, useful to hold left button down to bring up menus. 
+- Long third finger tap while holding two other fingers: initiate right mouse button drag and drop. Drag and drop stops when last finger is released.
 
 Changelog 
 -----------
