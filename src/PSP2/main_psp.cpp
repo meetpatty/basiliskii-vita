@@ -57,6 +57,7 @@ using std::string;
 #include "user_strings.h"
 #include "version.h"
 #include "main.h"
+#include "psp2_touch.h"
 
 #define Get_String(x) const_cast<char*>(GetString(x))
 
@@ -206,6 +207,8 @@ int main(int argc, char **argv)
 
 	danzeff_load();
 
+	psp2InitTouch();
+
 	// Initialize variables
 	RAMBaseHost = NULL;
 	ROMBaseHost = NULL;
@@ -241,6 +244,13 @@ int main(int argc, char **argv)
         break;
         case 6:
         scePowerSetArmClockFrequency(444);
+        break;
+        case 7:
+        // Setting maximum clocks
+        scePowerSetArmClockFrequency(444);
+        scePowerSetBusClockFrequency(222);
+        scePowerSetGpuClockFrequency(222);
+        scePowerSetGpuXbarClockFrequency(166);
         break;
     }
 

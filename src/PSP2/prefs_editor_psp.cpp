@@ -79,6 +79,10 @@ int psp_lcd_aspect = 0; // 4:3
 int psp_lcd_border = 1; // default to inverting the data
 
 int psp_60hz_timing = 1; // default to relaxed timing
+int psp_rear_touch_enable = 0; // do not use rear touch panel
+int psp_indirect_touch_enable = 0; // do not use indirect touch on front panel
+int psp_pointer_speed = 3; // indirect touch pointer speed is 1.0
+int psp_analog_deadzone = 2; // analog deadzone default is 10%
 
 extern char *psp_floppy_inserted;                    // String: filename of floppy inserted
 extern char *psp_cdrom_inserted;                     // String: filename of cdrom inserted
@@ -257,13 +261,40 @@ void psp_create_floppy(void *arg)
 		{ "300 MHz", 4 },
 		{ "333 MHz", 5 },
 		{ "444 MHz", 6 },
+		{ "Max CPU/GPU/Bus", 7 },
 		{ 0, GUI_END_OF_LIST }
 	};
+
+	struct gui_list psp_pointer_speed_list[] = {
+		{ "0.25", 0 },
+		{ "0.50", 1 },
+		{ "0.75", 2 },
+		{ "1.00", 3 },
+		{ "1.25", 4 },
+		{ "1.50", 5 },
+		{ "1.75", 6 },
+		{ "2.00", 7 },
+		{ 0, GUI_END_OF_LIST }
+	};
+
+    struct gui_list psp_analog_deadzone_list[] = {
+        { "5%", 0 },
+        { "10%", 1 },
+        { "15%", 2 },
+        { "20%", 3 },
+        { "25%", 4 },
+        { "30%", 5 },
+        { 0, GUI_END_OF_LIST }
+    };
 
 	struct gui_menu PspLevel[] = {
 		{ Get_String(STR_PSP_CPU_FREQ), GUI_CENTER | GUI_SELECT, &psp_cpu_speed_list, &psp_cpu_speed, GUI_ENABLED },
 		{ Get_String(STR_PSP_DISPLAY_ASPECT), GUI_CENTER | GUI_SELECT, &psp_aspect_list, &psp_lcd_aspect, GUI_ENABLED },
 		{ Get_String(STR_PSP_RELAXED_60HZ), GUI_CENTER | GUI_TOGGLE, &psp_60hz_timing, 0, GUI_ENABLED },
+		{ Get_String(STR_PSP_REAR_TOUCH), GUI_CENTER | GUI_TOGGLE, &psp_rear_touch_enable, 0, GUI_ENABLED },
+		{ Get_String(STR_PSP_INDIRECT_TOUCH), GUI_CENTER | GUI_TOGGLE, &psp_indirect_touch_enable, 0, GUI_ENABLED },
+		{ Get_String(STR_PSP_POINTER_SPEED), GUI_CENTER | GUI_SELECT, &psp_pointer_speed_list, &psp_pointer_speed, GUI_ENABLED },
+		{ Get_String(STR_PSP_ANALOG_DEADZONE), GUI_CENTER | GUI_SELECT, &psp_analog_deadzone_list, &psp_analog_deadzone, GUI_ENABLED },
 		{ 0, GUI_END_OF_MENU, 0, 0, 0 } // end of menu
 	};
 
@@ -577,6 +608,18 @@ bool PrefsEditor(void)
     if (PrefsFindBool("relaxed60hz"))
         psp_60hz_timing = PrefsFindBool("relaxed60hz") ? 1 : 0;
 
+    if (PrefsFindBool("reartouch"))
+        psp_rear_touch_enable = PrefsFindBool("reartouch") ? 1 : 0;
+
+    if (PrefsFindBool("indirecttouch"))
+        psp_indirect_touch_enable = PrefsFindBool("indirecttouch") ? 1 : 0;
+
+    if (PrefsFindInt32("pointerspeed"))
+       psp_pointer_speed = PrefsFindInt32("pointerspeed");
+
+    if (PrefsFindInt32("analogdeadzone"))
+       psp_analog_deadzone = PrefsFindInt32("analogdeadzone");
+
     // YEAH!! Do that GUI!!
 	do_gui(TopLevel, NULL, Get_String(STR_PREFS_ITEM_START));
 
@@ -658,6 +701,14 @@ bool PrefsEditor(void)
     PrefsReplaceInt32("pspdar", psp_lcd_aspect);
 
     PrefsReplaceBool("relaxed60hz", psp_60hz_timing ? true : false);
+
+    PrefsReplaceBool("reartouch", psp_rear_touch_enable ? true : false);
+
+    PrefsReplaceBool("indirecttouch", psp_indirect_touch_enable ? true : false);
+
+    PrefsReplaceInt32("pointerspeed", psp_pointer_speed);
+
+    PrefsReplaceInt32("analogdeadzone", psp_analog_deadzone);
 
     SavePrefs();
 

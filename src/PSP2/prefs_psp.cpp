@@ -29,15 +29,19 @@
 
 // Platform-specific preferences items
 prefs_desc platform_prefs_items[] = {
-    {"keycodefile", TYPE_STRING, false,  "path of keycode translation file"},
-    {"udpapoint", TYPE_INT32, false,     "UDP tunnel access point"},
-    {"pspspeed", TYPE_INT32, false,      "PSP CPU frequency"},
-    {"psptv", TYPE_BOOLEAN, false,       "Use video output"},
-    {"pspmar", TYPE_INT32, false,        "PSP TV monitor aspect ratio"},
-    {"psplaced", TYPE_BOOLEAN, false,    "PSP TV monitor uses interlace"},
-    {"pspdar", TYPE_INT32, false,        "PSP display aspect ratio"},
-    {"psposcan", TYPE_BOOLEAN, false,    "PSP video overscan enable"},
-    {"relaxed60hz", TYPE_BOOLEAN, false, "Use relaxed timing for 60 Hz IRQ"},
+    {"keycodefile", TYPE_STRING, false,    "path of keycode translation file"},
+    {"udpapoint", TYPE_INT32, false,       "UDP tunnel access point"},
+    {"pspspeed", TYPE_INT32, false,        "PSP CPU frequency"},
+    {"psptv", TYPE_BOOLEAN, false,         "Use video output"},
+    {"pspmar", TYPE_INT32, false,          "PSP TV monitor aspect ratio"},
+    {"psplaced", TYPE_BOOLEAN, false,      "PSP TV monitor uses interlace"},
+    {"pspdar", TYPE_INT32, false,          "PSP display aspect ratio"},
+    {"psposcan", TYPE_BOOLEAN, false,      "PSP video overscan enable"},
+    {"relaxed60hz", TYPE_BOOLEAN, false,   "Use relaxed timing for 60 Hz IRQ"},
+    {"reartouch", TYPE_BOOLEAN, false,     "Enable rear touch panel"},
+    {"indirecttouch", TYPE_BOOLEAN, false, "Use indirect front touch"},
+    {"pointerspeed", TYPE_INT32, false,    "Mouse pointer speed"},
+    {"analogdeadzone", TYPE_INT32, false,  "Analog joystick deadzone"},
 	{NULL, TYPE_END, false, NULL} // End of list
 };
 

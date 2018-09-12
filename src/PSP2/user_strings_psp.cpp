@@ -62,6 +62,10 @@ user_string_def platform_strings[] = {
 	{STR_PSP_DISPLAY_ASPECT, "Display Aspect Ratio"},
 	{STR_PSP_OVERSCAN, "Draw in Overscan Region"},
 	{STR_PSP_RELAXED_60HZ, "Relaxed timing for 60 Hz IRQ"},
+	{STR_PSP_REAR_TOUCH, "Enable rear touch panel"},
+	{STR_PSP_INDIRECT_TOUCH, "Use indirect front touch"},
+	{STR_PSP_POINTER_SPEED, "Mouse pointer speed"},
+	{STR_PSP_ANALOG_DEADZONE, "Analog joystick deadzone"},
 
     {STR_TICK_THREAD_ERR, "Cannot create thread for ticks."},
     {STR_NO_NET_THREAD_ERR, "Cannot create network thread."},

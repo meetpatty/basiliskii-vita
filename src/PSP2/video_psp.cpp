@@ -41,6 +41,8 @@
 #include "user_strings.h"
 #include "video.h"
 #include "video_defs.h"
+#include "psp2_touch.h"
+#include "math.h"
 
 #define DEBUG 0
 #include "debug.h"
@@ -77,7 +79,13 @@ vita2d_texture *screen, *screen_16;
 unsigned int *screen_data;
 unsigned short *screen_16_data;
 
+static int hires_dx;
+static int hires_dy;
 static int32 frame_skip;							// Prefs items
+bool psp_rear_touch;
+bool psp_indirect_touch;
+float psp_pointer_speed_factor;
+int psp_analog_dead;
 
 bool refresh_okay = false;
 
@@ -91,7 +99,7 @@ static uint32 DISP_BUF = 0;
 static uint8 *the_buffer = NULL;					// Mac frame buffer (where MacOS draws into)
 static uint32 the_buffer_size;						// Size of allocated the_buffer
 
-static int32 psp_screen_x = 640;
+int32 psp_screen_x = 640;
 static int32 psp_screen_y = 480;
 static int32 psp_screen_d = VDEPTH_8BIT;
 
@@ -489,6 +497,11 @@ bool VideoInit(bool classic)
 	// Read prefs
 	frame_skip = PrefsFindInt32("frameskip");
     psp_lcd_aspect = PrefsFindInt32("pspdar");
+    psp_rear_touch = PrefsFindBool("reartouch");
+    psp_indirect_touch = PrefsFindBool("indirecttouch");
+    psp_pointer_speed_factor = PrefsFindInt32("pointerspeed") * 0.25 + 0.25;
+    psp_analog_dead = PrefsFindInt32("analogdeadzone") * 1600 + 1600;
+
     // set PSP screen variables
     BUF_WIDTH = 768;
     SCR_WIDTH = 960;
@@ -840,7 +853,7 @@ void handle_keyboard(void)
 		}
 		else if (numReports) {
 
-			if (k_reports[numReports-1].modifiers[1] & 0x2) //Caps Lock
+			if (k_reports[numReports - 1].modifiers[1] & 0x2) //Caps Lock
 			{
 				if (!caps_lock) {
 					caps_lock = true;
@@ -855,7 +868,7 @@ void handle_keyboard(void)
 				}
 			}
 
-			int l_ctrl_pressed = k_reports[numReports-1].modifiers[0] & 0x1 || prev_modifiers & 0x10;
+			int l_ctrl_pressed = k_reports[numReports - 1].modifiers[0] & 0x1 || prev_modifiers & 0x10;
 			int l_ctrl_prev_pressed = prev_modifiers & 0x1 || prev_modifiers & 0x10;
 			if (l_ctrl_pressed)
 			{
@@ -870,7 +883,7 @@ void handle_keyboard(void)
 				}
 			}
 
-			int l_shift_pressed = k_reports[numReports-1].modifiers[0] & 0x2 || prev_modifiers & 0x20;
+			int l_shift_pressed = k_reports[numReports - 1].modifiers[0] & 0x2 || prev_modifiers & 0x20;
 			int l_shift_prev_pressed = prev_modifiers & 0x2 || prev_modifiers & 0x20;
 			if (l_shift_pressed)
 			{
@@ -885,7 +898,7 @@ void handle_keyboard(void)
 				}
 			}
 
-			int l_alt_pressed = k_reports[numReports-1].modifiers[0] & 0x4 || prev_modifiers & 0x40;
+			int l_alt_pressed = k_reports[numReports - 1].modifiers[0] & 0x4 || prev_modifiers & 0x40;
 			int l_alt_prev_pressed = prev_modifiers & 0x4 || prev_modifiers & 0x4;
 			if (l_alt_pressed)
 			{
@@ -900,7 +913,7 @@ void handle_keyboard(void)
 				}
 			}
 
-			int l_logo_pressed = k_reports[numReports-1].modifiers[0] & 0x8 || prev_modifiers & 0x80;
+			int l_logo_pressed = k_reports[numReports - 1].modifiers[0] & 0x8 || prev_modifiers & 0x80;
 			int l_logo_prev_pressed = prev_modifiers & 0x8 || prev_modifiers & 0x80;
 			if (l_logo_pressed)
 			{
@@ -915,13 +928,13 @@ void handle_keyboard(void)
 				}
 			}
 
-			prev_modifiers = k_reports[numReports-1].modifiers[0];
+			prev_modifiers = k_reports[numReports - 1].modifiers[0];
 
 			int i, j;
 
 			for (i = 0; i < 6; i++) {
 
-				int keyCode = k_reports[numReports-1].keycodes[i];
+				int keyCode = k_reports[numReports - 1].keycodes[i];
 
 				if (keyCode != prev_keys[i]) {
 
@@ -1162,6 +1175,73 @@ void handle_menu(SceCtrlData pad)
 }
 
 /*
+ * Rescale Analog joystick axes
+ */
+
+void rescaleAnalog(int *x, int *y, int dead) {
+	//radial and scaled deadzone
+	//http://www.third-helix.com/2013/04/12/doing-thumbstick-dead-zones-right.html
+	//input and output values go from -32767...+32767;
+
+	//the maximum is adjusted to account for SCE_CTRL_MODE_DIGITALANALOG_WIDE
+	//where a reported maximum axis value corresponds to 80% of the full range
+	//of motion of the analog stick
+
+	if (dead == 0) return;
+	if (dead >= 32767){
+		*x = 0;
+		*y = 0;
+		return;
+	}
+
+	const float maxAxis = 32767.0f;
+	float analogX = (float) *x;
+	float analogY = (float) *y;
+	float deadZone = (float) dead;
+
+	float magnitude = sqrt(analogX * analogX + analogY * analogY);
+	if (magnitude >= deadZone){
+		//adjust maximum magnitude
+		float absAnalogX = fabs(analogX);
+		float absAnalogY = fabs(analogY);
+		float maxX;
+		float maxY;
+		if (absAnalogX > absAnalogY){
+			maxX = maxAxis;
+			maxY = (maxAxis * analogY) / absAnalogX;
+		}else{
+			maxX = (maxAxis * analogX) / absAnalogY;
+			maxY = maxAxis;
+		}
+		float maximum = sqrt(maxX * maxX + maxY * maxY);
+		if (maximum > 1.25f * maxAxis) maximum = 1.25f * maxAxis;
+		if (maximum < magnitude) maximum = magnitude;
+
+		// find scaled axis values with magnitudes between zero and maximum
+		float scalingFactor = maximum / magnitude * (magnitude - deadZone) / (maximum - deadZone);		
+		analogX = (analogX * scalingFactor);
+		analogY = (analogY * scalingFactor);
+
+		// clamp to ensure results will never exceed the maxAxis value
+		float clampingFactor = 1.0f;
+		absAnalogX = fabs(analogX);
+		absAnalogY = fabs(analogY);
+		if (absAnalogX > maxAxis || absAnalogY > maxAxis){
+			if (absAnalogX > absAnalogY)
+				clampingFactor = maxAxis / absAnalogX;
+			else
+				clampingFactor = maxAxis / absAnalogY;
+		}
+
+		*x = (int) (clampingFactor * analogX);
+		*y = (int) (clampingFactor * analogY);
+	}else{
+		*x = 0;
+		*y = 0;
+	}
+}
+
+/*
  *  Mac VBL interrupt
  */
 
@@ -1243,40 +1323,56 @@ void VideoInterrupt(void)
 	// process inputs
     if (!input_mode && !show_menu)
     {
-        if (touch.reportNum <= 0 && mouseClickedTouch)
-        {
-            mouseClickedTouch = false;
-            initialTouch = true;
-            ADBMouseUp(0);
+        // touch
+        if (psp_indirect_touch || psp_rear_touch) {
+            psp2PollTouch();
         }
-        else if (touch.reportNum > 0) {
-            ADBSetRelMouseMode(false);
-
-            int x = lerp(touch.report[0].x, 1920, 960);
-            int y =lerp(touch.report[0].y, 1088, 544);
-
-            //map to display
-            int display_x = (x - ((960.0 - psp_screen_x*scale_x)/2)) / scale_x;
-            int display_y = y / scale_y;
-
-            ADBMouseMoved(display_x, display_y);
-
-            if (!mouseClickedTouch && initialTouch)
+        if (!psp_indirect_touch) {   
+            if (touch.reportNum <= 0 && mouseClickedTouch)
             {
-                initialTouch = false;
+                mouseClickedTouch = false;
+                initialTouch = true;
+                ADBMouseUp(0);
             }
-            else if (!mouseClickedTouch)
-            {
-                mouseClickedTouch = true;
-                ADBMouseDown(0);
+            else if (touch.reportNum > 0) {
+                ADBSetRelMouseMode(false);
+
+                int x = lerp(touch.report[0].x, 1920, 960);
+                int y =lerp(touch.report[0].y, 1088, 544);
+
+                //map to display
+                int display_x = (x - ((960.0 - psp_screen_x*scale_x)/2)) / scale_x;
+                int display_y = y / scale_y;
+
+                ADBMouseMoved(display_x, display_y);
+
+                if (!mouseClickedTouch && initialTouch)
+                {
+                    initialTouch = false;
+                }
+                else if (!mouseClickedTouch)
+                {
+                    mouseClickedTouch = true;
+                    ADBMouseDown(0);
+                }
             }
         }
-
+        
         // mouse
-        if (abs(pad.lx - 128) >= 32 || abs(pad.ly - 128) >= 32)
-        {
-            ADBSetRelMouseMode(true);
-            ADBMouseMoved(stick[((pad.lx - 128) >> 4) + 8], stick[((pad.ly - 128) >> 4) + 8]);
+        int x = (pad.lx - 127) * 256;
+        int y = (pad.ly - 127) * 256;
+        rescaleAnalog(&x, &y, psp_analog_dead);
+        hires_dx += (int) ((x * psp_pointer_speed_factor) / 16);
+        hires_dy += (int) ((y * psp_pointer_speed_factor) / 16);
+        if (hires_dx != 0 || hires_dy != 0) {
+            int x_rel = hires_dx / 256;
+            int y_rel = hires_dy / 256;
+            if (x_rel || y_rel) {
+                ADBSetRelMouseMode(true);
+                ADBMouseMoved(x_rel, y_rel);
+            }
+            hires_dx %= 256;
+            hires_dy %= 256;
         }
 
         for (int i=0; i<NUM_MAPS; i++)
@@ -1290,39 +1386,45 @@ void VideoInterrupt(void)
         }
 
 		//HID mouse
-		int ret = sceHidMouseRead(mouse_hid_handle, (SceHidMouseReport**)&m_reports, 1);
-		if (ret > 0)
+		int numReports = sceHidMouseRead(mouse_hid_handle, (SceHidMouseReport**)&m_reports, SCE_HID_MAX_REPORT);
+		if (numReports > 0)
         {
-			ADBSetRelMouseMode(true);
-			int i = 0;
+			for (int i = 0; i <= numReports - 1; i++)
+			{
+				ADBSetRelMouseMode(true);
 
-			if (m_reports[0].rel_x || m_reports[0].rel_y) {
-				ADBMouseMoved(m_reports[0].rel_x*2, m_reports[0].rel_y*2);
-			}
+				if (m_reports[i].rel_x || m_reports[i].rel_y) {
+					hires_dx += (int) (m_reports[i].rel_x * 2 * 256 * psp_pointer_speed_factor);
+					hires_dy += (int) (m_reports[i].rel_y * 2 * 256 * psp_pointer_speed_factor);
+					ADBMouseMoved(hires_dx / 256, hires_dy / 256);
+					hires_dx %= 256;
+					hires_dy %= 256;
+				}
 
-			if (m_reports[i].buttons & 0x1) { //Left mouse button
-				if (!leftMouseClicked) {
-					leftMouseClicked = true;
-					ADBMouseDown(0);
+				if (m_reports[i].buttons & 0x1) { //Left mouse button
+					if (!leftMouseClicked) {
+						leftMouseClicked = true;
+						ADBMouseDown(0);
+					}
 				}
-			}
-			else {
-				if (leftMouseClicked) {
-					leftMouseClicked = false;
-					ADBMouseUp(0);
+				else {
+					if (leftMouseClicked) {
+						leftMouseClicked = false;
+						ADBMouseUp(0);
+					}
 				}
-			}
 
-			if (m_reports[i].buttons & 0x2) { //Right mouse button
-				if (!rightMouseClicked) {
-					rightMouseClicked = true;
-					ADBMouseDown(1);
+				if (m_reports[i].buttons & 0x2) { //Right mouse button
+					if (!rightMouseClicked) {
+						rightMouseClicked = true;
+						ADBMouseDown(1);
+					}
 				}
-			}
-			else {
-				if (rightMouseClicked) {
-					rightMouseClicked = false;
-					ADBMouseUp(1);
+				else {
+					if (rightMouseClicked) {
+						rightMouseClicked = false;
+						ADBMouseUp(1);
+					}
 				}
 			}
         }
@@ -1446,7 +1548,6 @@ void VideoInterrupt(void)
 
 	}
 }
-
 
 /*
  *  Set interrupts enable
