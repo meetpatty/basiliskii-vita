@@ -37,6 +37,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -45,6 +46,7 @@
 
 #ifndef WIN32
 #include <unistd.h>
+#include <dirent.h>
 #endif
 
 #if defined __APPLE__ && defined __MACH__
@@ -174,9 +176,9 @@ static uint32 next_cnid = fsUsrCNID;	// Next available CNID
 
 #if defined __APPLE__ && defined __MACH__
 struct crtimebuf {
-	unsigned long length;
-	struct timespec crtime;
-};
+    u_int32_t length;
+    struct timespec crtime;
+} __attribute__((aligned(4), packed));
 
 static uint32 do_get_creation_time(const char *path)
 {
@@ -333,7 +335,7 @@ static void pstrcpy(char *dst, const char *src)
 // Convert C string to pascal string
 static void cstr2pstr(char *dst, const char *src)
 {
-	*dst++ = strlen(src);
+	*dst++ = char(strlen(src));
 	char c;
 	while ((c = *src++) != 0) {
 		// Note: we are converting host ':' characters to Mac '/' characters here
@@ -819,9 +821,9 @@ static int16 get_current_dir(uint32 pb, uint32 dirID, uint32 &current_dir, bool 
 				break;
 
 			case dtmvWDRefNum:		// Determined by working directory refNum
-				if (dirID)
+				if (dirID) {
 					current_dir = dirID;
-				else {
+				} else {
 					D(bug("  resolving WDCB\n"));
 					r.d[0] = 0;
 					r.d[1] = 0;
@@ -837,9 +839,9 @@ static int16 get_current_dir(uint32 pb, uint32 dirID, uint32 &current_dir, bool 
 				break;
 
 			case dtmvDefault:		// Determined by default volume
-				if (dirID)
+				if (dirID) {
 					current_dir = dirID;
-				else {
+				} else {
 					uint32 wdpb = fs_data + fsReturn;
 					WriteMacInt32(wdpb + ioNamePtr, 0);
 					D(bug("  getting default volume\n"));
@@ -1050,8 +1052,6 @@ static int16 fs_volume_mount(uint32 pb)
 	WriteMacInt16(vcb + vcbSigWord, 0x4244);
 #if defined(__BEOS__) || defined(WIN32)
 	WriteMacInt32(vcb + vcbCrDate, TimeToMacTime(root_stat.st_crtime));
-#elif defined(PSP)
-	WriteMacInt32(vcb + vcbCrDate, TimeToMacTime(root_stat.st_mtime));
 #elif defined __APPLE__ && defined __MACH__
 	WriteMacInt32(vcb + vcbCrDate, get_creation_time(RootPath));
 #else
@@ -1117,8 +1117,6 @@ static int16 fs_get_vol_info(uint32 pb, bool hfs)
 		pstrcpy((char *)Mac2HostAddr(ReadMacInt32(pb + ioNamePtr)), VOLUME_NAME);
 #if defined(__BEOS__) || defined(WIN32)
 	WriteMacInt32(pb + ioVCrDate, TimeToMacTime(root_stat.st_crtime));
-#elif defined(PSP)
-	WriteMacInt32(pb + ioVCrDate, TimeToMacTime(root_stat.st_mtime));
 #elif defined __APPLE__ && defined __MACH__
 	WriteMacInt32(pb + ioVCrDate, get_creation_time(RootPath));
 #else
@@ -1195,9 +1193,7 @@ static int16 fs_get_vol(uint32 pb)
 // Set default volume (WDParam)
 static int16 fs_set_vol(uint32 pb, bool hfs, uint32 vcb)
 {
-	return fnfErr;
-	
-	/*D(bug(" fs_set_vol(%08lx), vRefNum %d, name %.31s, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt32(pb + ioWDDirID)));
+	D(bug(" fs_set_vol(%08lx), vRefNum %d, name %.31s, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt32(pb + ioWDDirID)));
 	M68kRegisters r;
 
 	// Determine parameters
@@ -1247,14 +1243,13 @@ static int16 fs_set_vol(uint32 pb, bool hfs, uint32 vcb)
 	r.d[2] = refNum;
 	Execute68k(fs_data + fsSetDefaultVol, &r);
 	D(bug("  UTSetDefaultVol() returned %d\n", r.d[0]));
-	return (int16)r.d[0];*/
+	return (int16)r.d[0];
 }
 
 // Query file attributes (HFileParam)
 static int16 fs_get_file_info(uint32 pb, bool hfs, uint32 dirID)
 {
-	return fnfErr;
-	/*D(bug(" fs_get_file_info(%08lx), vRefNum %d, name %.31s, idx %d, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt16(pb + ioFDirIndex), dirID));
+	D(bug(" fs_get_file_info(%08lx), vRefNum %d, name %.31s, idx %d, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt16(pb + ioFDirIndex), dirID));
 
 	FSItem *fs_item;
 	int16 dir_index = ReadMacInt16(pb + ioFDirIndex);
@@ -1311,13 +1306,11 @@ read_next_de:
 	if (ReadMacInt32(pb + ioNamePtr))
 		cstr2pstr((char *)Mac2HostAddr(ReadMacInt32(pb + ioNamePtr)), fs_item->guest_name);
 	WriteMacInt16(pb + ioFRefNum, 0);
-	WriteMacInt8(pb + ioFlAttrib, access(full_path, W_OK) == 0 ? 0 : faLocked);
+	WriteMacInt8(pb + ioFlAttrib, 0);
 	WriteMacInt32(pb + ioDirID, fs_item->id);
 
 #if defined(__BEOS__) || defined(WIN32)
 	WriteMacInt32(pb + ioFlCrDat, TimeToMacTime(st.st_crtime));
-#elif defined(PSP)
-	WriteMacInt32(pb + ioFlCrDat, TimeToMacTime(st.st_mtime));
 #elif defined __APPLE__ && defined __MACH__
 	WriteMacInt32(pb + ioFlCrDat, get_creation_time(full_path));
 #else
@@ -1328,8 +1321,9 @@ read_next_de:
 	get_finfo(full_path, pb + ioFlFndrInfo, hfs ? pb + ioFlXFndrInfo : 0, false);
 
 	WriteMacInt16(pb + ioFlStBlk, 0);
-	WriteMacInt32(pb + ioFlLgLen, st.st_size);
-	WriteMacInt32(pb + ioFlPyLen, (st.st_size | (AL_BLK_SIZE - 1)) + 1);
+	uint32 file_size = (uint32) st.st_size;
+	WriteMacInt32(pb + ioFlLgLen, file_size);
+	WriteMacInt32(pb + ioFlPyLen, (file_size | (AL_BLK_SIZE - 1)) + 1);
 	WriteMacInt16(pb + ioFlRStBlk, 0);
 	uint32 rf_size = get_rfork_size(full_path);
 	WriteMacInt32(pb + ioFlRLgLen, rf_size);
@@ -1340,7 +1334,7 @@ read_next_de:
 		WriteMacInt32(pb + ioFlParID, fs_item->parent_id);
 		WriteMacInt32(pb + ioFlClpSiz, 0);
 	}
-	return noErr;*/
+	return noErr;
 }
 
 // Set file attributes (HFileParam)
@@ -1371,9 +1365,7 @@ static int16 fs_set_file_info(uint32 pb, bool hfs, uint32 dirID)
 // Query file/directory attributes
 static int16 fs_get_cat_info(uint32 pb)
 {
-	return fnfErr;
-	
-	/*D(bug(" fs_get_cat_info(%08lx), vRefNum %d, name %.31s, idx %d, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt16(pb + ioFDirIndex), ReadMacInt32(pb + ioDirID)));
+	D(bug(" fs_get_cat_info(%08lx), vRefNum %d, name %.31s, idx %d, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt16(pb + ioFDirIndex), ReadMacInt32(pb + ioDirID)));
 
 	FSItem *fs_item;
 	int16 dir_index = ReadMacInt16(pb + ioFDirIndex);
@@ -1438,14 +1430,12 @@ read_next_de:
 	if (ReadMacInt32(pb + ioNamePtr))
 		cstr2pstr((char *)Mac2HostAddr(ReadMacInt32(pb + ioNamePtr)), fs_item->guest_name);
 	WriteMacInt16(pb + ioFRefNum, 0);
-	WriteMacInt8(pb + ioFlAttrib, (S_ISDIR(st.st_mode) ? faIsDir : 0) | (access(full_path, W_OK) == 0 ? 0 : faLocked));
+	WriteMacInt8(pb + ioFlAttrib, (S_ISDIR(st.st_mode) ? faIsDir : 0));
 	WriteMacInt8(pb + ioACUser, 0);
 	WriteMacInt32(pb + ioDirID, fs_item->id);
 	WriteMacInt32(pb + ioFlParID, fs_item->parent_id);
 #if defined(__BEOS__) || defined(WIN32)
 	WriteMacInt32(pb + ioFlCrDat, TimeToMacTime(st.st_crtime));
-#elif defined(PSP)
-	WriteMacInt32(pb + ioFlCrDat, TimeToMacTime(st.st_mtime));
 #elif defined __APPLE__ && defined __MACH__
 	WriteMacInt32(pb + ioFlCrDat, get_creation_time(full_path));
 #else
@@ -1488,15 +1478,16 @@ read_next_de:
 		WriteMacInt16(pb + ioDrNmFls, count);
 	} else {
 		WriteMacInt16(pb + ioFlStBlk, 0);
-		WriteMacInt32(pb + ioFlLgLen, st.st_size);
-		WriteMacInt32(pb + ioFlPyLen, (st.st_size | (AL_BLK_SIZE - 1)) + 1);
+		uint32 file_size = (uint32) st.st_size;
+		WriteMacInt32(pb + ioFlLgLen, file_size);
+		WriteMacInt32(pb + ioFlPyLen, (file_size | (AL_BLK_SIZE - 1)) + 1);
 		WriteMacInt16(pb + ioFlRStBlk, 0);
 		uint32 rf_size = get_rfork_size(full_path);
 		WriteMacInt32(pb + ioFlRLgLen, rf_size);
 		WriteMacInt32(pb + ioFlRPyLen, (rf_size | (AL_BLK_SIZE - 1)) + 1);
 		WriteMacInt32(pb + ioFlClpSiz, 0);
 	}
-	return noErr;*/
+	return noErr;
 }
 
 // Set file/directory attributes
@@ -1536,7 +1527,7 @@ static int16 fs_open(uint32 pb, uint32 dirID, uint32 vcb, bool resource_fork)
 
 	// Convert ioPermssn to open() flag
 	int flag = 0;
-	bool write_ok = (access(full_path, W_OK) == 0);
+	bool write_ok = 1;
 	switch (ReadMacInt8(pb + ioPermssn)) {
 		case fsCurPerm:		// Whatever is currently allowed
 			if (write_ok)
@@ -1565,7 +1556,7 @@ static int16 fs_open(uint32 pb, uint32 dirID, uint32 vcb, bool resource_fork)
 			return fnfErr;
 		fd = open_rfork(full_path, flag);
 		if (fd >= 0) {
-			if (extfs_fstat(fd, &st) < 0) {
+			if (fstat(fd, &st) < 0) {
 				close(fd);
 				return errno2oserr();
 			}
@@ -1574,10 +1565,10 @@ static int16 fs_open(uint32 pb, uint32 dirID, uint32 vcb, bool resource_fork)
 			st.st_mode = 0;
 		}
 	} else {
-		fd = open_dfork(full_path, flag);
+		fd = open(full_path, flag);
 		if (fd < 0)
 			return errno2oserr();
-		if (extfs_fstat(fd, &st) < 0) {
+		if (fstat(fd, &st) < 0) {
 			close(fd);
 			return errno2oserr();
 		}
@@ -1598,8 +1589,9 @@ static int16 fs_open(uint32 pb, uint32 dirID, uint32 vcb, bool resource_fork)
 	// Initialize FCB, fd is stored in fcbCatPos
 	WriteMacInt32(fcb + fcbFlNm, fs_item->id);
 	WriteMacInt8(fcb + fcbFlags, ((flag == O_WRONLY || flag == O_RDWR) ? fcbWriteMask : 0) | (resource_fork ? fcbResourceMask : 0) | (write_ok ? 0 : fcbFileLockedMask));
-	WriteMacInt32(fcb + fcbEOF, st.st_size);
-	WriteMacInt32(fcb + fcbPLen, (st.st_size | (AL_BLK_SIZE - 1)) + 1);
+	uint32 file_size = (uint32) st.st_size;
+	WriteMacInt32(fcb + fcbEOF, file_size);
+	WriteMacInt32(fcb + fcbPLen, (file_size | (AL_BLK_SIZE - 1)) + 1);
 	WriteMacInt32(fcb + fcbCrPs, 0);
 	WriteMacInt32(fcb + fcbVPtr, vcb);
 	WriteMacInt32(fcb + fcbClmpSize, CLUMP_SIZE);
@@ -1705,22 +1697,24 @@ static int16 fs_get_eof(uint32 pb)
 	if (ReadMacInt32(fcb + fcbFlNm) == 0)
 		return fnOpnErr;
 	int fd = ReadMacInt32(fcb + fcbCatPos);
-	if (fd < 0)
+	if (fd < 0) {
 		if (ReadMacInt8(fcb + fcbFlags) & fcbResourceMask) {	// "pseudo" resource fork
 			WriteMacInt32(pb + ioMisc, 0);
 			return noErr;
 		} else
 			return fnOpnErr;
+	}
 
 	// Get file size
 	struct stat st;
-	if (extfs_fstat(fd, &st) < 0)
+	if (fstat(fd, &st) < 0)
 		return errno2oserr();
 
 	// Adjust FCBs
-	WriteMacInt32(fcb + fcbEOF, st.st_size);
-	WriteMacInt32(fcb + fcbPLen, (st.st_size | (AL_BLK_SIZE - 1)) + 1);
-	WriteMacInt32(pb + ioMisc, st.st_size);
+	uint32 file_size = (uint32) st.st_size;
+	WriteMacInt32(fcb + fcbEOF, file_size);
+	WriteMacInt32(fcb + fcbPLen, (file_size | (AL_BLK_SIZE - 1)) + 1);
+	WriteMacInt32(pb + ioMisc, file_size);
 	D(bug("  adjusting FCBs\n"));
 	r.d[0] = ReadMacInt16(pb + ioRefNum);
 	Execute68k(fs_data + fsAdjustEOF, &r);
@@ -1741,15 +1735,16 @@ static int16 fs_set_eof(uint32 pb)
 	if (ReadMacInt32(fcb + fcbFlNm) == 0)
 		return fnOpnErr;
 	int fd = ReadMacInt32(fcb + fcbCatPos);
-	if (fd < 0)
+	if (fd < 0) {
 		if (ReadMacInt8(fcb + fcbFlags) & fcbResourceMask)	// "pseudo" resource fork
 			return noErr;
 		else
 			return fnOpnErr;
+	}
 
 	// Truncate file
 	uint32 size = ReadMacInt32(pb + ioMisc);
-	if (extfs_ftruncate(fd, size) < 0)
+	if (ftruncate(fd, size) < 0)
 		return errno2oserr();
 
 	// Adjust FCBs
@@ -1778,15 +1773,16 @@ static int16 fs_get_fpos(uint32 pb)
 	if (ReadMacInt32(fcb + fcbFlNm) == 0)
 		return fnOpnErr;
 	int fd = ReadMacInt32(fcb + fcbCatPos);
-	if (fd < 0)
+	if (fd < 0) {
 		if (ReadMacInt8(fcb + fcbFlags) & fcbResourceMask) {	// "pseudo" resource fork
 			WriteMacInt32(pb + ioPosOffset, 0);
 			return noErr;
 		} else
 			return fnOpnErr;
+	}
 
 	// Get file position
-	uint32 pos = extfs_seek(fd, 0, SEEK_CUR);
+	uint32 pos = (uint32) lseek(fd, 0, SEEK_CUR);
 	WriteMacInt32(fcb + fcbCrPs, pos);
 	WriteMacInt32(pb + ioPosOffset, pos);
 	return noErr;
@@ -1804,31 +1800,32 @@ static int16 fs_set_fpos(uint32 pb)
 	if (ReadMacInt32(fcb + fcbFlNm) == 0)
 		return fnOpnErr;
 	int fd = ReadMacInt32(fcb + fcbCatPos);
-	if (fd < 0)
+	if (fd < 0) {
 		if (ReadMacInt8(fcb + fcbFlags) & fcbResourceMask) {	// "pseudo" resource fork
 			WriteMacInt32(pb + ioPosOffset, 0);
 			return noErr;
 		} else
 			return fnOpnErr;
+	}
 
 	// Set file position
 	switch (ReadMacInt16(pb + ioPosMode) & 3) {
 		case fsFromStart:
-			if (extfs_seek(fd, ReadMacInt32(pb + ioPosOffset), SEEK_SET) < 0)
+			if (lseek(fd, ReadMacInt32(pb + ioPosOffset), SEEK_SET) < 0)
 				return posErr;
 			break;
 		case fsFromLEOF:
-			if (extfs_seek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_END) < 0)
+			if (lseek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_END) < 0)
 				return posErr;
 			break;
 		case fsFromMark:
-			if (extfs_seek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_CUR) < 0)
+			if (lseek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_CUR) < 0)
 				return posErr;
 			break;
 		default:
 			break;
 	}
-	uint32 pos = extfs_seek(fd, 0, SEEK_CUR);
+	uint32 pos = (uint32) lseek(fd, 0, SEEK_CUR);
 	WriteMacInt32(fcb + fcbCrPs, pos);
 	WriteMacInt32(pb + ioPosOffset, pos);
 	return noErr;
@@ -1850,25 +1847,26 @@ static int16 fs_read(uint32 pb)
 	if (ReadMacInt32(fcb + fcbFlNm) == 0)
 		return fnOpnErr;
 	int fd = ReadMacInt32(fcb + fcbCatPos);
-	if (fd < 0)
+	if (fd < 0) {
 		if (ReadMacInt8(fcb + fcbFlags) & fcbResourceMask) {	// "pseudo" resource fork
 			WriteMacInt32(pb + ioActCount, 0);
 			return eofErr;
 		} else
 			return fnOpnErr;
+	}
 
 	// Seek
 	switch (ReadMacInt16(pb + ioPosMode) & 3) {
 		case fsFromStart:
-			if (extfs_seek(fd, ReadMacInt32(pb + ioPosOffset), SEEK_SET) < 0)
+			if (lseek(fd, ReadMacInt32(pb + ioPosOffset), SEEK_SET) < 0)
 				return posErr;
 			break;
 		case fsFromLEOF:
-			if (extfs_seek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_END) < 0)
+			if (lseek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_END) < 0)
 				return posErr;
 			break;
 		case fsFromMark:
-			if (extfs_seek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_CUR) < 0)
+			if (lseek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_CUR) < 0)
 				return posErr;
 			break;
 	}
@@ -1878,7 +1876,7 @@ static int16 fs_read(uint32 pb)
 	int16 read_err = errno2oserr();
 	D(bug("  actual %d\n", actual));
 	WriteMacInt32(pb + ioActCount, actual >= 0 ? actual : 0);
-	uint32 pos = extfs_seek(fd, 0, SEEK_CUR);
+	uint32 pos = (uint32) lseek(fd, 0, SEEK_CUR);
 	WriteMacInt32(fcb + fcbCrPs, pos);
 	WriteMacInt32(pb + ioPosOffset, pos);
 	if (actual != (ssize_t)ReadMacInt32(pb + ioReqCount))
@@ -1903,25 +1901,26 @@ static int16 fs_write(uint32 pb)
 	if (ReadMacInt32(fcb + fcbFlNm) == 0)
 		return fnOpnErr;
 	int fd = ReadMacInt32(fcb + fcbCatPos);
-	if (fd < 0)
+	if (fd < 0) {
 		if (ReadMacInt8(fcb + fcbFlags) & fcbResourceMask) {	// "pseudo" resource fork
 			WriteMacInt32(pb + ioActCount, ReadMacInt32(pb + ioReqCount));
 			return noErr;
 		} else
 			return fnOpnErr;
+	}
 
 	// Seek
 	switch (ReadMacInt16(pb + ioPosMode) & 3) {
 		case fsFromStart:
-			if (extfs_seek(fd, ReadMacInt32(pb + ioPosOffset), SEEK_SET) < 0)
+			if (lseek(fd, ReadMacInt32(pb + ioPosOffset), SEEK_SET) < 0)
 				return posErr;
 			break;
 		case fsFromLEOF:
-			if (extfs_seek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_END) < 0)
+			if (lseek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_END) < 0)
 				return posErr;
 			break;
 		case fsFromMark:
-			if (extfs_seek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_CUR) < 0)
+			if (lseek(fd, (int32)ReadMacInt32(pb + ioPosOffset), SEEK_CUR) < 0)
 				return posErr;
 			break;
 	}
@@ -1931,7 +1930,7 @@ static int16 fs_write(uint32 pb)
 	int16 write_err = errno2oserr();
 	D(bug("  actual %d\n", actual));
 	WriteMacInt32(pb + ioActCount, actual >= 0 ? actual : 0);
-	uint32 pos = extfs_seek(fd, 0, SEEK_CUR);
+	uint32 pos = (uint32) lseek(fd, 0, SEEK_CUR);
 	WriteMacInt32(fcb + fcbCrPs, pos);
 	WriteMacInt32(pb + ioPosOffset, pos);
 	if (actual != (ssize_t)ReadMacInt32(pb + ioReqCount))
@@ -1956,7 +1955,7 @@ static int16 fs_create(uint32 pb, uint32 dirID)
 		return dupFNErr;
 
 	// Create file
-	int fd = open(full_path, O_CREAT, 0777);
+	int fd = open(full_path, O_CREAT, 0666);
 	if (fd < 0)
 		return errno2oserr();
 	else {
@@ -1968,7 +1967,7 @@ static int16 fs_create(uint32 pb, uint32 dirID)
 // Create directory
 static int16 fs_dir_create(uint32 pb)
 {
-	/*D(bug(" fs_dir_create(%08lx), vRefNum %d, name %.31s, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt32(pb + ioDirID)));
+	D(bug(" fs_dir_create(%08lx), vRefNum %d, name %.31s, dirID %d\n", pb, ReadMacInt16(pb + ioVRefNum), Mac2HostAddr(ReadMacInt32(pb + ioNamePtr) + 1), ReadMacInt32(pb + ioDirID)));
 
 	// Find FSItem for given directory
 	FSItem *fs_item;
@@ -1981,13 +1980,12 @@ static int16 fs_dir_create(uint32 pb)
 		return dupFNErr;
 
 	// Create directory
-	if (mkdir(full_path, 0777) < 0)
+	if (sceIoMkdir(full_path, 0777) < 0)
 		return errno2oserr();
 	else {
 		WriteMacInt32(pb + ioDirID, fs_item->id);
 		return noErr;
 	}
-	*/
 }
 
 // Delete file/directory
@@ -2165,7 +2163,7 @@ static int16 fs_get_wd_info(uint32 pb, uint32 vcb)
 int16 ExtFSHFS(uint32 vcb, uint16 selectCode, uint32 paramBlock, uint32 globalsPtr, int16 fsid)
 {
 	uint16 trapWord = selectCode & 0xf0ff;
-	bool hfs = selectCode & kHFSMask;
+	bool hfs = (selectCode & kHFSMask) != 0;
 	switch (trapWord) {
 		case kFSMOpen:
 			return fs_open(paramBlock, hfs ? ReadMacInt32(paramBlock + ioDirID) : 0, vcb, false);

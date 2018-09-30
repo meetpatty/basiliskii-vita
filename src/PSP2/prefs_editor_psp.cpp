@@ -328,7 +328,7 @@ void psp_create_floppy(void *arg)
 
     struct gui_menu VolLevel[] = {
         { Get_String(STR_BOOTDRIVER_CTRL), GUI_CENTER | GUI_SELECT, &vol_boot_list, &psp_boot_select, GUI_ENABLED },
-        { Get_String(STR_EXTFS_CTRL), GUI_CENTER | GUI_TOGGLE, &psp_extfs_enable, 0, GUI_DISABLED },
+        { Get_String(STR_EXTFS_CTRL), GUI_CENTER | GUI_TOGGLE, &psp_extfs_enable, 0, GUI_ENABLED },
         { Get_String(STR_CREATE_VOLUME_TITLE), GUI_CENTER | GUI_MENU, CreateVolLevel, 0, GUI_DISABLED },
 		{ "", GUI_CENTER | GUI_DIVIDER, 0, 0, GUI_DISABLED },
 		{ Get_String(STR_VOLUMES_CTRL), GUI_CENTER | GUI_TEXT, 0, 0, GUI_DISABLED },
@@ -599,7 +599,7 @@ bool PrefsEditor(void)
             psp_floppyfile = strdup(temp);
 
     if (PrefsFindString("extfs"))
-        psp_extfs_enable = 0;
+        psp_extfs_enable = 1;
 
     psp_cpu_speed = PrefsFindInt32("pspspeed");
 

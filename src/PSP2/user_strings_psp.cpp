@@ -28,7 +28,7 @@ user_string_def platform_strings[] = {
 	// Common strings that have a platform-specific variant
 	{STR_EXTFS_CTRL, "Vita MemStick"},
 	{STR_EXTFS_NAME, "Vita MemStick Directory Tree"},
-	{STR_EXTFS_VOLUME_NAME, "MS0"},
+	{STR_EXTFS_VOLUME_NAME, "ux0"},
 
 	{STR_CREATE_VOLUME_PANEL_BUTTON, "Create Hardfile"},
 

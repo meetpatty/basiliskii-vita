@@ -1,7 +1,7 @@
 /*
  *  extfs_unix.cpp - MacOS file system for access native file system access, Unix specific stuff
  *
- *  Basilisk II (C) 1997-2005 Christian Bauer
+ *  Basilisk II (C) 1997-2008 Christian Bauer
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,11 +20,13 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-//#include <dirent.h>
+#include <dirent.h>
 #include <errno.h>
+#include <utime.h>
 
 #include "sysdeps.h"
 #include "extfs.h"
@@ -34,62 +36,9 @@
 #include "debug.h"
 
 
-extern int ftruncate(int fildes, off_t length);
-
-
 // Default Finder flags
 const uint16 DEFAULT_FINDER_FLAGS = kHasBeenInited;
 
-// AppleSingle/Double entry IDs
-#define DATA_FORK   1
-#define RSRC_FORK   2
-#define REAL_NAME   3
-#define COMMENT     4
-#define ICON_BW     5
-#define ICON_COLOR  6
-#define FILE_INFO   7
-#define FINDER_INFO 9
-
-// AppleSingle/Double magic numbers
-#define MAGIC_SINGLE 0x00051600
-#define MAGIC_DOUBLE 0x00051607
-
-// AppleSingle/Double versions
-#define VERSION_AUX 0x00010000
-#define VERSION_OSX 0x00020000
-
-// AppleSingle/Double structures
-
-struct EntryDescriptors {
-    uint32 id;
-    uint32 offset;
-    uint32 length;
-};
-
-struct AppleSingle {
-    uint32 magicNumber;
-    uint32 version;
-    char home[16];
-    uint16 numEntries;
-} __attribute__((packed));
-
-
-static AppleSingle aHeader;
-static EntryDescriptors aEntries[8];
-
-static int helpers[16][3]; // fd based table of index, offset, and length
-
-#define XFS_INDEX(x) helpers[x][0]
-#define XFS_OFFSET(x) helpers[x][1]
-#define XFS_LENGTH(x) helpers[x][2]
-
-#if 0
-#define LOGGING
-#define LOG(...) fprintf(log, __VA_ARGS__)
-static FILE *log;
-#else
-#define LOG(...)
-#endif
 
 /*
  *  Initialization
@@ -97,9 +46,6 @@ static FILE *log;
 
 void extfs_init(void)
 {
-#ifdef LOGGING
-    log = fopen("errorlog.txt", "w");
-#endif
 }
 
 
@@ -109,9 +55,6 @@ void extfs_init(void)
 
 void extfs_exit(void)
 {
-#ifdef LOGGING
-    fclose(log);
-#endif
 }
 
 
@@ -131,116 +74,80 @@ void add_path_component(char *path, const char *component)
 
 
 /*
- *  Helper support
+ *  Finder info and resource forks are kept in helper files
+ *
+ *  Finder info:
+ *    /path/.finf/file
+ *  Resource fork:
+ *    /path/.rsrc/file
+ *
+ *  The .finf files store a FInfo/DInfo, followed by a FXInfo/DXInfo
+ *  (16+16 bytes)
  */
 
-static int open_helper(const char *path, int id, int flag)
+static void make_helper_path(const char *src, char *dest, const char *add, bool only_dir = false)
+{
+	dest[0] = 0;
+
+	// Get pointer to last component of path
+	const char *last_part = strrchr(src, '/');
+	if (last_part)
+		last_part++;
+	else
+		last_part = src;
+
+	// Copy everything before
+	strncpy(dest, src, last_part-src);
+	dest[last_part-src] = 0;
+
+	// Add additional component
+	strncat(dest, add, MAX_PATH_LENGTH-1);
+
+	// Add last component
+	if (!only_dir)
+		strncat(dest, last_part, MAX_PATH_LENGTH-1);
+}
+
+static int create_helper_dir(const char *path, const char *add)
+{
+	char helper_dir[MAX_PATH_LENGTH];
+	make_helper_path(path, helper_dir, add, true);
+	if (helper_dir[strlen(helper_dir) - 1] == '/')	// Remove trailing "/"
+		helper_dir[strlen(helper_dir) - 1] = 0;
+	return sceIoMkdir(helper_dir, 0777);
+}
+
+static int open_helper(const char *path, const char *add, int flag)
 {
 	char helper_path[MAX_PATH_LENGTH];
-	char xpath[MAX_PATH_LENGTH];
-	int len, i;
-
-    LOG("Opening %s of %s\n", (id==FINDER_INFO) ? "finder info" : (id==RSRC_FORK) ? "resource fork" : "???", path);
-
-    strncpy(xpath, path, MAX_PATH_LENGTH);
-	if (xpath[strlen(xpath) - 1] == '/')	// Remove trailing "/" so that directories can also have finf
-		xpath[strlen(xpath) - 1] = 0;
-
-    // generate AppleDouble filename from the original filename
-    char *temp = strrchr(xpath, '/');
-    if (temp == NULL)
-    {
-        strcpy(helper_path, "._");
-        strncat(helper_path, xpath, MAX_PATH_LENGTH);
-    }
-    else
-    {
-        strncpy(helper_path, xpath, (int)temp - (int)xpath + 1);
-        helper_path[(int)temp - (int)xpath + 1] = 0;
-        strcat(helper_path, "._");
-        strcat(helper_path, &temp[1]);
-    }
+	make_helper_path(path, helper_path, add);
 
 	if ((flag & O_ACCMODE) == O_RDWR || (flag & O_ACCMODE) == O_WRONLY)
 		flag |= O_CREAT;
-	int fd = open(helper_path, flag, 0777);
-	if (fd < 0)
-        goto err;
-
-    len = read(fd, (void *)&aHeader, sizeof(aHeader));
-    if (len < sizeof(aHeader))
-    {
-        // just created, make a "blank" AppleDouble header with entries
-        LOG("Created new AppleDouble file\n");
-        aHeader.magicNumber = do_byteswap_32(MAGIC_DOUBLE);
-        aHeader.version = do_byteswap_32(VERSION_OSX);
-        strcpy(aHeader.home, "Mac OS X        ");
-        aHeader.numEntries = do_byteswap_16(2);
-        aEntries[0].id = do_byteswap_32(FINDER_INFO);
-        aEntries[0].offset = do_byteswap_32(0x32);
-        aEntries[0].length = do_byteswap_32(32);
-        aEntries[1].id = do_byteswap_32(RSRC_FORK);
-        aEntries[1].offset = do_byteswap_32(0x52);
-        aEntries[1].length = do_byteswap_32(0);
-        lseek(fd, 0, SEEK_SET);
-        write(fd, (void *)&aHeader, sizeof(aHeader));
-        write(fd, (void *)aEntries, 2 * sizeof(EntryDescriptors));
-        len = 0;
-        for (i=0; i<8; i++)
-            write(fd, (void *)&len, 4);
-        lseek(fd, sizeof(aHeader), SEEK_SET);
-    }
-
-    len = read(fd, (void *)aEntries, do_byteswap_16(aHeader.numEntries) * sizeof(EntryDescriptors));
-    if (len == do_byteswap_16(aHeader.numEntries) * sizeof(EntryDescriptors))
-    {
-        for (i=0; i<do_byteswap_16(aHeader.numEntries); i++)
-            if (do_byteswap_32(aEntries[i].id) == id)
-                break;
-        if (i != do_byteswap_16(aHeader.numEntries))
-        {
-            XFS_INDEX(fd) = i;
-            XFS_OFFSET(fd) = do_byteswap_32(aEntries[i].offset);
-            XFS_LENGTH(fd) = do_byteswap_32(aEntries[i].length);
-            LOG("fd = %d, index = %d, offset = %d, length = %d\n", fd, XFS_INDEX(fd), XFS_OFFSET(fd), XFS_LENGTH(fd));
-            return fd;
-        }
-    }
-err:
-    // not present or some other error
-    LOG("Err - helper_fd = %d\n", fd);
-    return fd;
+	int fd = open(helper_path, flag, 0666);
+	if (fd < 0) {
+		if (errno == ENOENT && (flag & O_CREAT)) {
+			// One path component was missing, probably the helper
+			// directory. Try to create it and re-open the file.
+			int ret = create_helper_dir(path, add);
+			if (ret < 0)
+				return ret;
+			fd = open(helper_path, flag, 0666);
+		}
+	}
+	return fd;
 }
 
 static int open_finf(const char *path, int flag)
 {
-	int fd = open_helper(path, FINDER_INFO, flag);
-    if (fd >= 0)
-        lseek(fd, XFS_OFFSET(fd), SEEK_SET); // go to start of data
-	return fd;
+	return open_helper(path, ".finf/", flag);
 }
 
 static int open_rsrc(const char *path, int flag)
 {
-    int fd = open_helper(path, RSRC_FORK, flag);
-    if (fd >= 0)
-        lseek(fd, XFS_OFFSET(fd), SEEK_SET); // go to start of data
-	return fd;
+	return open_helper(path, ".rsrc/", flag);
 }
 
-static void update_helper(int fd)
-{
-    off_t curr = lseek(fd, 0, SEEK_CUR);
-    off_t size = lseek(fd, 0, SEEK_END);
-
-    // update the resource fork entry in the file - slows writing, but it's just the resource fork... who cares?
-    aEntries[XFS_INDEX(fd)].length = do_byteswap_32(size - (off_t)XFS_OFFSET(fd));
-    lseek(fd, sizeof(aHeader) + XFS_INDEX(fd) * sizeof(EntryDescriptors), SEEK_SET);
-    write(fd, (void *)&aEntries[XFS_INDEX(fd)], sizeof(EntryDescriptors));
-
-    // return to where we were
-    lseek(fd, curr, SEEK_SET);
-}
 
 /*
  *  Get/set finder info for file/directory specified by full path
@@ -329,12 +236,10 @@ void get_finfo(const char *path, uint32 finfo, uint32 fxinfo, bool is_dir)
 		if (fxinfo)
 			actual += read(fd, Mac2HostAddr(fxinfo), SIZEOF_FXInfo);
 		close(fd);
-        LOG("Returning finfo for %d\n", fd);
 		if (actual >= SIZEOF_FInfo)
 			return;
 	}
 
-    LOG("Getting finfo from table for %d\n", fd);
 	// No Finder info file, translate file name extension to MacOS type/creator
 	if (!is_dir) {
 		int path_len = strlen(path);
@@ -353,12 +258,19 @@ void get_finfo(const char *path, uint32 finfo, uint32 fxinfo, bool is_dir)
 
 void set_finfo(const char *path, uint32 finfo, uint32 fxinfo, bool is_dir)
 {
+	/*struct utimbuf times;
+	times.actime = MacTimeToTime(ReadMacInt32(finfo - ioFlFndrInfo + ioFlCrDat));
+	times.modtime = MacTimeToTime(ReadMacInt32(finfo - ioFlFndrInfo + ioFlMdDat));
+
+	if (utime(path, &times) < 0) {
+		D(bug("utime failed on %s\n", path));
+	}*/
+
 	// Open Finder info file
 	int fd = open_finf(path, O_RDWR);
 	if (fd < 0)
 		return;
 
-    LOG("Setting finfo for %d\n", fd);
 	// Write file
 	write(fd, Mac2HostAddr(finfo), SIZEOF_FInfo);
 	if (fxinfo)
@@ -378,24 +290,12 @@ uint32 get_rfork_size(const char *path)
 	if (fd < 0)
 		return 0;
 
-    LOG("Getting fork size for %d (%d)\n", fd, XFS_LENGTH(fd));
+	// Get size
+	off_t size = lseek(fd, 0, SEEK_END);
+
 	// Close file and return size
 	close(fd);
-	return XFS_LENGTH(fd);
-}
-
-int open_dfork(const char *path, int flag)
-{
-    int fd = open(path, flag);
-
-    if (fd >= 0)
-    {
-        LOG("Opening data fork %d\n", fd);
-        XFS_INDEX(fd) = -1;
-        XFS_OFFSET(fd) = 0;
-    }
-
-    return fd;
+	return size < 0 ? 0 : size;
 }
 
 int open_rfork(const char *path, int flag)
@@ -405,7 +305,6 @@ int open_rfork(const char *path, int flag)
 
 void close_rfork(const char *path, int fd)
 {
-    LOG("Closing resource fork %d\n", fd);
 	close(fd);
 }
 
@@ -417,7 +316,6 @@ void close_rfork(const char *path, int fd)
 
 ssize_t extfs_read(int fd, void *buffer, size_t length)
 {
-    LOG("Reading file %d (%d)\n", fd, length);
 	return read(fd, buffer, length);
 }
 
@@ -429,47 +327,9 @@ ssize_t extfs_read(int fd, void *buffer, size_t length)
 
 ssize_t extfs_write(int fd, void *buffer, size_t length)
 {
-    LOG("Writing file %d (%d)\n", fd, length);
-	int len = write(fd, buffer, length);
-
-	if (XFS_INDEX(fd) >= 0)
-        update_helper(fd);
-
-    return len;
+	return write(fd, buffer, length);
 }
 
-/*
- *  Seek to offset in the file,
- *  returns position after seek
- */
-
-off_t extfs_seek(int fd, off_t offset, int whence)
-{
-    LOG("Seeking file %d (%d/%d)\n", fd, offset, whence);
-    if (whence == SEEK_SET)
-        return lseek(fd, offset + (off_t)XFS_OFFSET(fd), whence) - (off_t)XFS_OFFSET(fd);
-
-    return lseek(fd, offset, whence) - (off_t)XFS_OFFSET(fd);
-}
-
-/*
- *  Get file status
- */
-
-int extfs_fstat(int fd, struct stat *buf)
-{
-    int ret = fstat(fd, buf);
-
-    if (XFS_INDEX(fd) >= 0)
-        buf->st_size -= XFS_OFFSET(fd);
-
-    return ret;
-}
-
-int extfs_ftruncate(int fd, off_t length)
-{
-    return ftruncate(fd, length + XFS_OFFSET(fd));
-}
 
 /*
  *  Remove file/directory (and associated helper files),
@@ -478,35 +338,28 @@ int extfs_ftruncate(int fd, off_t length)
 
 bool extfs_remove(const char *path)
 {
-	// Remove helper first, don't complain if this fails
+	// Remove helpers first, don't complain if this fails
 	char helper_path[MAX_PATH_LENGTH];
-	char xpath[MAX_PATH_LENGTH];
-
-    strncpy(xpath, path, MAX_PATH_LENGTH);
-	if (xpath[strlen(xpath) - 1] == '/')	// Remove trailing "/" so that directories can also have finf
-		xpath[strlen(xpath) - 1] = 0;
-
-    // generate AppleDouble filename from the original filename
-    char *temp = strrchr(xpath, '/');
-    if (temp == NULL)
-    {
-        strcpy(helper_path, "._");
-        strncat(helper_path, xpath, MAX_PATH_LENGTH);
-    }
-    else
-    {
-        strncpy(helper_path, xpath, (int)temp - (int)xpath + 1);
-        helper_path[(int)temp - (int)xpath + 1] = 0;
-        strcat(helper_path, "._");
-        strcat(helper_path, &temp[1]);
-    }
-
+	make_helper_path(path, helper_path, ".finf/", false);
+	remove(helper_path);
+	make_helper_path(path, helper_path, ".rsrc/", false);
 	remove(helper_path);
 
-	// Now remove file or directory
-	if (remove(path) < 0)
+	// Now remove file or directory (and helper directories in the directory)
+	if (remove(path) < 0) {
+		if (errno == EISDIR || errno == ENOTEMPTY) {
+			helper_path[0] = 0;
+			strncpy(helper_path, path, MAX_PATH_LENGTH-1);
+			add_path_component(helper_path, ".finf");
+			sceIoRmdir(helper_path);
+			helper_path[0] = 0;
+			strncpy(helper_path, path, MAX_PATH_LENGTH-1);
+			add_path_component(helper_path, ".rsrc");
+			sceIoRmdir(helper_path);
+			return sceIoRmdir(path) == 0;
+		} else
 			return false;
-
+	}
 	return true;
 }
 
@@ -518,53 +371,21 @@ bool extfs_remove(const char *path)
 
 bool extfs_rename(const char *old_path, const char *new_path)
 {
-	// Rename helper first, don't complain if this fails
+	// Rename helpers first, don't complain if this fails
 	char old_helper_path[MAX_PATH_LENGTH], new_helper_path[MAX_PATH_LENGTH];
-	char xpath[MAX_PATH_LENGTH];
-
-    strncpy(xpath, old_path, MAX_PATH_LENGTH);
-	if (xpath[strlen(xpath) - 1] == '/')	// Remove trailing "/" so that directories can also have finf
-		xpath[strlen(xpath) - 1] = 0;
-
-    // generate AppleDouble filename from the original filename
-    char *temp = strrchr(xpath, '/');
-    if (temp == NULL)
-    {
-        strcpy(old_helper_path, "._");
-        strncat(old_helper_path, xpath, MAX_PATH_LENGTH);
-    }
-    else
-    {
-        strncpy(old_helper_path, xpath, (int)temp - (int)xpath + 1);
-        old_helper_path[(int)temp - (int)xpath + 1] = 0;
-        strcat(old_helper_path, "._");
-        strcat(old_helper_path, &temp[1]);
-    }
-
-    strncpy(xpath, new_path, MAX_PATH_LENGTH);
-	if (xpath[strlen(xpath) - 1] == '/')	// Remove trailing "/" so that directories can also have finf
-		xpath[strlen(xpath) - 1] = 0;
-
-    // generate AppleDouble filename from the original filename
-    temp = strrchr(xpath, '/');
-    if (temp == NULL)
-    {
-        strcpy(new_helper_path, "._");
-        strncat(new_helper_path, xpath, MAX_PATH_LENGTH);
-    }
-    else
-    {
-        strncpy(new_helper_path, xpath, (int)temp - (int)xpath + 1);
-        new_helper_path[(int)temp - (int)xpath + 1] = 0;
-        strcat(new_helper_path, "._");
-        strcat(new_helper_path, &temp[1]);
-    }
-
+	make_helper_path(old_path, old_helper_path, ".finf/", false);
+	make_helper_path(new_path, new_helper_path, ".finf/", false);
+	create_helper_dir(new_path, ".finf/");
+	rename(old_helper_path, new_helper_path);
+	make_helper_path(old_path, old_helper_path, ".rsrc/", false);
+	make_helper_path(new_path, new_helper_path, ".rsrc/", false);
+	create_helper_dir(new_path, ".rsrc/");
 	rename(old_helper_path, new_helper_path);
 
 	// Now rename file
 	return rename(old_path, new_path) == 0;
 }
+
 
 // Convert from the host OS filename encoding to MacRoman
 const char *host_encoding_to_macroman(const char *filename)

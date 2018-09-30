@@ -60,7 +60,7 @@
 #endif
 
 /* ExtFS is supported */
-#define SUPPORTS_EXTFS 0
+#define SUPPORTS_EXTFS 1
 
 /* BSD socket API supported */
 #define SUPPORTS_UDP_TUNNEL 0
