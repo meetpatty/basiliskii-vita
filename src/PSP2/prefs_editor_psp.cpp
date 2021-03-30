@@ -91,6 +91,7 @@ extern char psp_home[256];
 // Memory support code
 
 #define MEMORY_USER_SIZE 0x04000000
+int _newlib_heap_size_user = 192 * 1024 * 1024;
 
 static uint32 memFreeSpace(uint32 inAccuracy) {
      if(!inAccuracy)
