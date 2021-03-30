@@ -22,7 +22,7 @@ INCLUDES = -I../include -I./include -I. -I../uae_cpu -I../uae_cpu/fpu/softfloat
 LIBS = -lSceCtrl_stub -lSceTouch_stub -lSceLibKernel_stub -lSceAudio_stub -lSceNetCtl_stub \
 	-lSceNet_stub -lvita2d -lSceDisplay_stub -lSceSysmodule_stub -lSceGxm_stub \
 	-lScePgf_stub -lScePvf_stub -lSceHid_stub -lScePower_stub -lSceAppUtil_stub \
-	-lSceCommonDialog_stub -lSceIme_stub -lfreetype -lpng -ljpeg -lz -lm -lc
+	-lSceCommonDialog_stub -lSceIme_stub -lSceAppMgr_stub -lfreetype -lpng -ljpeg -lz -lm -lc
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
