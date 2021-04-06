@@ -287,6 +287,11 @@ For multi-touch gestures, the fingers have to be far enough apart from each othe
 Changelog 
 -----------
 
+0.33h
+
+- implement slow/fast modifiers for analog pointer
+- allow more memory (>29 MB) for emulated computer
+
 0.33g
 
 - further improve pointer motion with analog stick
