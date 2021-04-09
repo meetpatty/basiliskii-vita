@@ -101,6 +101,17 @@ LTRIGGER – option key
 UP/DOWN/LEFT/RIGHT – corresponding cursor key  
 ANALOG STICK – mouse  
 
+analog_speed Controls
+================
+CROSS – mouse button  
+SQUARE – enter key  
+CIRCLE – control key + mouse button ("right click")
+TRIANGLE – command + q (Quit Application)  
+RTRIGGER – hold to slow down analog joystick mouse
+LTRIGGER – hold to speed up analog joystick mouse
+UP/DOWN/LEFT/RIGHT – corresponding cursor key  
+ANALOG STICK – mouse  
+
 dpad_mouse Controls
 ===================
 CROSS – mouse button  
@@ -256,6 +267,8 @@ Basilisk II Key Codes
 122     F1
 255     No key press
 256     Mouse button 1
+1024	Slow down analog stick mouse
+1025	Speed up analog stick mouse
 `````
 
 Indirect Touch Controls
@@ -273,6 +286,11 @@ For multi-touch gestures, the fingers have to be far enough apart from each othe
 
 Changelog 
 -----------
+
+0.33h
+
+- implement slow/fast modifiers for analog pointer
+- allow more memory (>29 MB) for emulated computer
 
 0.33g
 

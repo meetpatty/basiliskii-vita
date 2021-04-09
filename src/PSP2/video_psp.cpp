@@ -81,6 +81,8 @@ unsigned short *screen_16_data;
 
 static int hires_dx;
 static int hires_dy;
+static bool slow_mouse;
+static bool fast_mouse;
 static int32 frame_skip;							// Prefs items
 bool psp_rear_touch;
 bool psp_indirect_touch;
@@ -755,25 +757,29 @@ void key_down(int i)
         return;
     }
 
-    if (button_map[i][2] & 0x100)
-        ADBMouseDown(button_map[i][2] & 7);
-    else
-        ADBKeyDown(button_map[i][2]);
-
-    if (button_map[i][3] & 0x100)
-        ADBMouseDown(button_map[i][3] & 7);
-    else if (button_map[i][3] != 0xFF)
-        ADBKeyDown(button_map[i][3]);
-
-    if (button_map[i][4] & 0x100)
-        ADBMouseDown(button_map[i][4] & 7);
-    else if (button_map[i][4] != 0xFF)
-        ADBKeyDown(button_map[i][4]);
-
-    if (button_map[i][5] & 0x100)
-        ADBMouseDown(button_map[i][5] & 7);
-    else if (button_map[i][5] != 0xFF)
-        ADBKeyDown(button_map[i][5]);
+    for (int j = 2; j <= 5; j++)
+    {
+        if (button_map[i][j] & 0x100)
+        {
+            ADBMouseDown(button_map[i][j] & 7);
+        }
+        else if (button_map[i][j] == 1024)
+        {
+            slow_mouse = true;
+            hires_dx = 0;
+            hires_dy = 0;
+        }
+        else if (button_map[i][j] == 1025)
+        {
+            fast_mouse = true;
+            hires_dx = 0;
+            hires_dy = 0;
+        }
+        else if (j == 2 || (j != 2 && button_map[i][j] != 0xFF))
+        {
+            ADBKeyDown(button_map[i][j]);
+        }
+    }
 }
 
 void key_up(int i)
@@ -786,25 +792,29 @@ void key_up(int i)
     if (button_map[i][2] == 57)
         return; // ignore caps lock key up
 
-    if (button_map[i][5] & 0x100)
-        ADBMouseUp(button_map[i][5] & 7);
-    else if (button_map[i][5] != 0xFF)
-        ADBKeyUp(button_map[i][5]);
-
-    if (button_map[i][4] & 0x100)
-        ADBMouseUp(button_map[i][4] & 7);
-    else if (button_map[i][4] != 0xFF)
-        ADBKeyUp(button_map[i][4]);
-
-    if (button_map[i][3] & 0x100)
-        ADBMouseUp(button_map[i][3] & 7);
-    else if (button_map[i][3] != 0xFF)
-        ADBKeyUp(button_map[i][3]);
-
-    if (button_map[i][2] & 0x100)
-        ADBMouseUp(button_map[i][2] & 7);
-    else
-        ADBKeyUp(button_map[i][2]);
+    for (int j = 5; j >= 2; j--)
+    {
+        if (button_map[i][j] & 0x100)
+        {
+            ADBMouseUp(button_map[i][j] & 7);
+        }
+        else if (button_map[i][j] == 1024)
+        {
+            slow_mouse = false;
+            hires_dx = 0;
+            hires_dy = 0;
+        }
+        else if (button_map[i][j] == 1025)
+        {
+            fast_mouse = false;
+            hires_dx = 0;
+            hires_dy = 0;
+        }
+        else if (j == 2 || (j != 2 && button_map[i][j] != 0xFF))
+        {
+            ADBKeyUp(button_map[i][j]);
+        }
+    }
 }
 
 void handle_keyboard(void)
@@ -1364,15 +1374,28 @@ void VideoInterrupt(void)
         rescaleAnalog(&x, &y, psp_analog_dead);
         hires_dx += (int) ((x * psp_pointer_speed_factor) / 16);
         hires_dy += (int) ((y * psp_pointer_speed_factor) / 16);
+
+        int slowdown = 256;
+
+        if (fast_mouse)
+        {
+            slowdown /= 3;
+        }
+
+        if (slow_mouse)
+        {
+            slowdown *= 8;
+        }
+
         if (hires_dx != 0 || hires_dy != 0) {
-            int x_rel = hires_dx / 256;
-            int y_rel = hires_dy / 256;
+            int x_rel = hires_dx / slowdown;
+            int y_rel = hires_dy / slowdown;
             if (x_rel || y_rel) {
                 ADBSetRelMouseMode(true);
                 ADBMouseMoved(x_rel, y_rel);
             }
-            hires_dx %= 256;
-            hires_dy %= 256;
+            hires_dx %= slowdown;
+            hires_dy %= slowdown;
         }
 
         for (int i=0; i<NUM_MAPS; i++)
